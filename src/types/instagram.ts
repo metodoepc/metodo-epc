@@ -44,6 +44,10 @@ export type InstagramProfile = {
   photoUrl: string; // data URL (legacy) or HTTPS URL (new uploads)
   handle: string;
   displayName: string;
+  publicationCount: string;
+  followersCount: string;
+  followingCount: string;
+  category: string;
   bio: string; // Rich Text HTML
   mainLink: string;
   linkItems: InstagramProfileLink[];

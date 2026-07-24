@@ -4,6 +4,7 @@ import {
 } from "@/lib/normalizeInstagramData";
 import { PresentationHeader } from "./PresentationHeader";
 import { RichText } from "./RichText";
+import { ModuleIcon } from "./ModuleIcon";
 import {
   TextList,
   FieldBlock,
@@ -54,32 +55,12 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
     (item) =>
       hasText(item.format) ||
       hasText(item.quantity) ||
-      hasText(item.period) ||
-      hasText(item.journeyRole) ||
-      hasText(item.notes)
+      hasText(item.period)
   );
 
   // ─── Objetivos ──────────────────────────────────────────────────────────────
-  // validationStatus alone does not make an item visible
   const objectiveItems = d.objectives.filter(
-    (item) =>
-      hasText(item.objective) ||
-      hasText(item.indicator) ||
-      hasText(item.target) ||
-      hasText(item.deadline)
-  );
-
-  // ─── Formatos de conteúdo ───────────────────────────────────────────────────
-  // name (v2) ← reels[].value (v1 legacy) via normalization
-  const contentFormats = d.contentArchitecture.formats.filter(
-    (item) =>
-      hasText(item.name) ||
-      hasText(item.structure) ||
-      hasText(item.duration) ||
-      hasText(item.journeyRole) ||
-      hasText(item.purpose) ||
-      hasText(item.cta) ||
-      hasText(item.notes)
+    (item) => hasText(item.objective)
   );
 
   // ─── Stories estratégicos ───────────────────────────────────────────────────
@@ -89,26 +70,13 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
       hasText(item.name) ||
       hasText(item.frequency) ||
       hasText(item.journeyStage) ||
-      hasText(item.purpose) ||
-      hasText(item.cta) ||
-      hasText(item.description)
+      hasText(item.cta)
   );
-
-  // ─── Diretrizes editoriais ──────────────────────────────────────────────────
-  // generalContentGuidelines (v2) ← contents[].value (v1 legacy) via normalization
-  const editorialGuidelines: TextItem[] = filterFilledStrings(
-    d.contentArchitecture.generalContentGuidelines
-  ).map((s) => ({ value: s }));
 
   // ─── Estruturas de linguagem ────────────────────────────────────────────────
   // howItAppears (v2) ← languageStructures[].value (v1 legacy)
   const languageStructureItems = d.languageStructures.filter(
-    (item) =>
-      hasText(item.name) ||
-      hasText(item.howItAppears) ||
-      hasText(item.journeyRelation) ||
-      hasText(item.avoid) ||
-      hasText(item.example)
+    (item) => hasText(item.name)
   );
 
   // ─── Hashtags ───────────────────────────────────────────────────────────────
@@ -119,10 +87,6 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
       hasText(cat.notes) ||
       filterFilledStrings(cat.hashtags).length > 0
   );
-
-  // ─── Direção visual ─────────────────────────────────────────────────────────
-  // generalStrategy (v2) ← visualStrategy (v1 legacy)
-  const visualStrategy = d.visualDirection.generalStrategy;
 
   // spread before sort to avoid mutating d.visualDirection.references
   // url (v2) ← visualReferences[].image (v1 legacy)
@@ -156,20 +120,16 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
   const connectionCtas: TextItem[] = filterFilledStrings(d.integration.connectionCtas).map(
     (s) => ({ value: s })
   );
-  const operationalDependencies: TextItem[] = filterFilledStrings(
-    d.integration.operationalDependencies
-  ).map((s) => ({ value: s }));
-
   // ─── Perfil ─────────────────────────────────────────────────────────────────
   const profilePhotoUrl = d.profile.photoUrl;
   const profileHandle = d.profile.handle;
   const profileName = d.profile.displayName;
+  const profilePublicationCount = d.profile.publicationCount;
+  const profileFollowersCount = d.profile.followersCount;
+  const profileFollowingCount = d.profile.followingCount;
+  const profileCategory = d.profile.category;
   const bioText = d.profile.bio;
   const bioLink = d.profile.mainLink;
-  // spread before sort to avoid mutating d.profile.linkItems
-  const profileLinkItems = [...d.profile.linkItems]
-    .sort((a, b) => a.order - b.order)
-    .filter((item) => hasText(item.title) || hasText(item.url));
   // highlights[].title (v2) ← highlights CSV string (v1 legacy); now structured
   // spread before sort to avoid mutating d.profile.highlights
   const profileHighlights = [...d.profile.highlights]
@@ -184,44 +144,19 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
 
   // ─── Condições de seção ─────────────────────────────────────────────────────
 
-  const hasStrategicDirectionSection =
-    hasText(d.strategicDirection.channelRole) ||
-    hasText(d.strategicDirection.generalStrategy) ||
-    hasText(d.strategicDirection.priorityAudiences) ||
-    hasText(d.strategicDirection.ecosystemFunction) ||
-    hasText(d.strategicDirection.profileDifferentiation) ||
-    hasText(d.strategicDirection.initialEditorialPriorities);
+  const hasStrategicDirectionSection = hasText(
+    d.strategicDirection.channelRole
+  );
 
-  const hasFrequencySection =
-    visibleFreqItems.length > 0 ||
-    hasText(d.publishing.minimumViableFrequency) ||
-    hasText(d.publishing.recommendedFrequency) ||
-    hasText(d.publishing.maximumSustainableFrequency) ||
-    hasText(d.publishing.productionRoutine) ||
-    hasText(d.publishing.adjustmentRule);
+  const hasFrequencySection = visibleFreqItems.length > 0;
 
   const hasContentAndLanguageSection =
     objectiveItems.length > 0 ||
-    contentFormats.length > 0 ||
     strategicStories.length > 0 ||
-    editorialGuidelines.length > 0 ||
     languageStructureItems.length > 0 ||
     hashtagCategories.length > 0;
 
-  const hasVisualDirectionSection =
-    hasText(visualStrategy) ||
-    hasText(d.visualDirection.humanPresence) ||
-    hasText(d.visualDirection.specialistRole) ||
-    hasText(d.visualDirection.backstage) ||
-    hasText(d.visualDirection.socialProof) ||
-    hasText(d.visualDirection.dataUsage) ||
-    hasText(d.visualDirection.informationHierarchy) ||
-    hasText(d.visualDirection.visualDensity) ||
-    hasText(d.visualDirection.desiredFeeling) ||
-    hasText(d.visualDirection.formatConsistency) ||
-    hasText(d.visualDirection.journeyAdaptation) ||
-    hasText(d.visualDirection.avoid) ||
-    visualReferenceItems.length > 0;
+  const hasVisualDirectionSection = visualReferenceItems.length > 0;
 
   const hasDiscoveryConversion =
     hasText(d.conversion.discovery.cta) ||
@@ -238,11 +173,7 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
   const hasConversionSection =
     hasDiscoveryConversion ||
     hasConsiderationConversion ||
-    hasDecisionConversion ||
-    hasText(d.conversion.conversionPath) ||
-    hasText(d.conversion.primaryOffer) ||
-    hasText(d.conversion.commercialChannel) ||
-    hasText(d.conversion.crmIntegration);
+    hasDecisionConversion;
 
   const hasMeasurementSection =
     primaryIndicators.length > 0 ||
@@ -260,9 +191,7 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
     receivesAudienceFrom.length > 0 ||
     directsAudienceTo.length > 0 ||
     connectionCtas.length > 0 ||
-    operationalDependencies.length > 0 ||
-    hasText(d.integration.ecosystemRole) ||
-    hasText(d.integration.contentRepurposing);
+    hasText(d.integration.ecosystemRole);
 
   const hasExternalReferencesSection = externalReferenceItems.length > 0;
 
@@ -271,9 +200,12 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
     hasText(profilePhotoUrl) ||
     hasText(profileHandle) ||
     hasText(profileName) ||
+    hasText(profilePublicationCount) ||
+    hasText(profileFollowersCount) ||
+    hasText(profileFollowingCount) ||
+    hasText(profileCategory) ||
     hasText(bioText) ||
     hasText(bioLink) ||
-    profileLinkItems.length > 0 ||
     profileHighlights.length > 0;
 
   const hasVisibleInstagramContent =
@@ -282,7 +214,6 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
     hasContentAndLanguageSection ||
     hasVisualDirectionSection ||
     hasConversionSection ||
-    hasMeasurementSection ||
     hasIntegrationSection ||
     hasProfileSection ||
     hasExternalReferencesSection;
@@ -323,6 +254,41 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
             </div>
           )}
 
+          {(hasText(profilePublicationCount) ||
+            hasText(profileFollowersCount) ||
+            hasText(profileFollowingCount)) && (
+            <div className="mt-8 grid grid-cols-3 gap-4 border-t border-slate-100 pt-6 text-center">
+              {hasText(profilePublicationCount) && (
+                <div>
+                  <p className="text-lg font-semibold text-slate-950">
+                    {profilePublicationCount}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">publicações</p>
+                </div>
+              )}
+              {hasText(profileFollowersCount) && (
+                <div>
+                  <p className="text-lg font-semibold text-slate-950">
+                    {profileFollowersCount}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">seguidores</p>
+                </div>
+              )}
+              {hasText(profileFollowingCount) && (
+                <div>
+                  <p className="text-lg font-semibold text-slate-950">
+                    {profileFollowingCount}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">seguindo</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {hasText(profileCategory) && (
+            <FieldBlock label="Categoria" value={profileCategory} />
+          )}
+
           <FieldBlock label="Bio" value={bioText} />
 
           {hasText(bioLink) && (
@@ -338,33 +304,6 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
               >
                 {bioLink}
               </a>
-            </div>
-          )}
-
-          {profileLinkItems.length > 0 && (
-            <div>
-              <p className="mb-3 mt-8 text-base font-semibold uppercase tracking-[0.22em] text-[#5f6f8a]">
-                Links adicionais
-              </p>
-              <ul className="space-y-3">
-                {profileLinkItems.map((item) => (
-                  <li key={item.id}>
-                    {hasText(item.title) && (
-                      <p className="text-sm font-medium text-slate-950">{item.title}</p>
-                    )}
-                    {hasText(item.url) && (
-                      <a
-                        href={item.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="break-all text-xs text-slate-500 hover:text-slate-950"
-                      >
-                        {item.url}
-                      </a>
-                    )}
-                  </li>
-                ))}
-              </ul>
             </div>
           )}
 
@@ -405,56 +344,13 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
       {hasStrategicDirectionSection && (
         <SectionCard title="Direção estratégica">
           <div className="space-y-4">
-          {hasText(d.strategicDirection.channelRole) && (
-            <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-              <h3 className="text-base font-semibold text-slate-950">Papel do canal</h3>
-              <RichText
-                content={d.strategicDirection.channelRole}
-                className="mt-3 text-sm leading-7 text-slate-700"
-              />
-            </div>
-          )}
-          {hasText(d.strategicDirection.generalStrategy) && (
-            <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-              <h3 className="text-base font-semibold text-slate-950">Estratégia geral</h3>
-              <RichText
-                content={d.strategicDirection.generalStrategy}
-                className="mt-3 text-sm leading-7 text-slate-700"
-              />
-            </div>
-          )}
-          {hasText(d.strategicDirection.priorityAudiences) && (
+            {hasText(d.strategicDirection.channelRole) && (
               <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                <h3 className="text-base font-semibold text-slate-950">Públicos prioritários</h3>
+                <h3 className="text-base font-semibold text-slate-950">
+                  Papel estratégico do Instagram
+                </h3>
                 <RichText
-                  content={d.strategicDirection.priorityAudiences}
-                  className="mt-3 text-sm leading-7 text-slate-700"
-                />
-              </div>
-            )}
-            {hasText(d.strategicDirection.ecosystemFunction) && (
-              <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                <h3 className="text-base font-semibold text-slate-950">Função no ecossistema</h3>
-                <RichText
-                  content={d.strategicDirection.ecosystemFunction}
-                  className="mt-3 text-sm leading-7 text-slate-700"
-                />
-              </div>
-            )}
-            {hasText(d.strategicDirection.profileDifferentiation) && (
-              <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                <h3 className="text-base font-semibold text-slate-950">Diferenciação do perfil</h3>
-                <RichText
-                  content={d.strategicDirection.profileDifferentiation}
-                  className="mt-3 text-sm leading-7 text-slate-700"
-                />
-              </div>
-            )}
-            {hasText(d.strategicDirection.initialEditorialPriorities) && (
-              <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                <h3 className="text-base font-semibold text-slate-950">Prioridades editoriais iniciais</h3>
-                <RichText
-                  content={d.strategicDirection.initialEditorialPriorities}
+                  content={d.strategicDirection.channelRole}
                   className="mt-3 text-sm leading-7 text-slate-700"
                 />
               </div>
@@ -491,73 +387,8 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
                     )}
                   </div>
                 )}
-                {hasText(item.journeyRole) && (
-                  <div className="mt-5 border-t border-slate-200 pt-5">
-                    <p className="text-sm font-medium text-slate-500">Papel na jornada</p>
-                    <p className="mt-1 whitespace-pre-wrap text-sm leading-7 text-slate-700">
-                      {item.journeyRole}
-                    </p>
-                  </div>
-                )}
-                {hasText(item.notes) && (
-                  <div className="mt-5 border-t border-slate-200 pt-5">
-                    <p className="text-sm font-medium text-slate-500">Observações</p>
-                    <p className="mt-1 whitespace-pre-wrap text-sm leading-7 text-slate-700">
-                      {item.notes}
-                    </p>
-                  </div>
-                )}
               </div>
             ))}
-            {(hasText(d.publishing.minimumViableFrequency) ||
-              hasText(d.publishing.recommendedFrequency) ||
-              hasText(d.publishing.maximumSustainableFrequency)) && (
-              <div className="space-y-4 pt-6">
-                <h3 className="text-xl font-semibold text-slate-950">Ritmo sustentável</h3>
-                {hasText(d.publishing.minimumViableFrequency) && (
-                  <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                    <PlainTextField
-                      label="Frequência mínima viável"
-                      value={d.publishing.minimumViableFrequency}
-                    />
-                  </div>
-                )}
-                {hasText(d.publishing.recommendedFrequency) && (
-                  <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                    <PlainTextField
-                      label="Frequência recomendada"
-                      value={d.publishing.recommendedFrequency}
-                    />
-                  </div>
-                )}
-                {hasText(d.publishing.maximumSustainableFrequency) && (
-                  <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                    <PlainTextField
-                      label="Frequência máxima sustentável"
-                      value={d.publishing.maximumSustainableFrequency}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-            {(hasText(d.publishing.productionRoutine) || hasText(d.publishing.adjustmentRule)) && (
-              <div className="space-y-4 pt-6">
-                <h3 className="text-xl font-semibold text-slate-950">Operação e ajustes</h3>
-                {hasText(d.publishing.productionRoutine) && (
-                  <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                    <PlainTextField
-                      label="Rotina de produção"
-                      value={d.publishing.productionRoutine}
-                    />
-                  </div>
-                )}
-                {hasText(d.publishing.adjustmentRule) && (
-                  <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                    <PlainTextField label="Regra de ajuste" value={d.publishing.adjustmentRule} />
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </SectionCard>
       )}
@@ -572,54 +403,18 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
                     Objetivos do canal
                   </h3>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {objectiveItems.map((item) => (
                     <div
                       key={item.id}
-                      className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200"
+                      className="flex items-start gap-4"
                     >
-                      <PlainTextField label="Objetivo" value={item.objective} />
-                      <div className="space-y-4">
-                        <PlainTextField label="Indicador" value={item.indicator} />
-                        <PlainTextField label="Meta" value={item.target} />
+                      <div className="mt-1 shrink-0 text-slate-500">
+                        <ModuleIcon slug="objetivos-do-projeto" />
                       </div>
-                      <div className="space-y-4">
-                        <PlainTextField label="Prazo" value={item.deadline} />
-                        <PlainTextField
-                          label="Status de validação"
-                          value={VALIDATION_STATUS_LABELS[item.validationStatus]}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {contentFormats.length > 0 && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-xl font-semibold text-slate-950">
-                    Formatos de conteúdo
-                  </h3>
-                </div>
-                <div className="space-y-4">
-                  {contentFormats.map((item) => (
-                    <div
-                      key={item.id}
-                      className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200"
-                    >
-                      <PlainTextField label="Nome do formato" value={item.name} />
-                      <PlainTextField label="Estrutura" value={item.structure} />
-                      <div className="space-y-4">
-                        <PlainTextField label="Duração ou extensão" value={item.duration} />
-                        <PlainTextField label="Papel na jornada" value={item.journeyRole} />
-                      </div>
-                      <PlainTextField label="Finalidade estratégica" value={item.purpose} />
-                      <div className="space-y-4">
-                        <PlainTextField label="CTA recomendado" value={item.cta} />
-                        <PlainTextField label="Observações" value={item.notes} />
-                      </div>
+                      <p className="whitespace-pre-wrap text-base leading-7 text-slate-800">
+                        {item.objective}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -639,31 +434,25 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
                       key={item.id}
                       className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200"
                     >
-                      <PlainTextField label="Nome do Story estratégico" value={item.name} />
-                      <div className="space-y-4">
+                      {hasText(item.name) && (
+                        <div>
+                          <p className="text-sm font-medium text-slate-500">Nome do Story estratégico</p>
+                          <h4 className="mt-2 text-xl font-semibold text-slate-950">{item.name}</h4>
+                        </div>
+                      )}
+                      {(hasText(item.frequency) || hasText(item.journeyStage)) && (
+                        <div className="mt-5 grid gap-4 sm:grid-cols-2">
                         <PlainTextField label="Frequência" value={item.frequency} />
                         <PlainTextField label="Etapa da jornada" value={item.journeyStage} />
-                      </div>
-                      <PlainTextField label="Finalidade estratégica" value={item.purpose} />
-                      <div className="space-y-4">
-                        <PlainTextField label="CTA" value={item.cta} />
-                        <PlainTextField label="Descrição" value={item.description} />
-                      </div>
+                        </div>
+                      )}
+                      {hasText(item.cta) && (
+                        <div className="mt-5 border-t border-slate-200 pt-5">
+                          <PlainTextField label="CTA" value={item.cta} />
+                        </div>
+                      )}
                     </div>
                   ))}
-                </div>
-              </div>
-            )}
-
-            {editorialGuidelines.length > 0 && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-xl font-semibold text-slate-950">
-                    Diretrizes editoriais
-                  </h3>
-                </div>
-                <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                  <TextList items={editorialGuidelines} label="Diretrizes editoriais" />
                 </div>
               </div>
             )}
@@ -675,19 +464,33 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
                     Estruturas de linguagem
                   </h3>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {languageStructureItems.map((item) => (
                     <div
                       key={item.id}
-                      className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200"
+                      className="space-y-4"
                     >
-                      <PlainTextField label="Nome da estrutura" value={item.name} />
-                      <PlainTextField label="Como aparece na comunicação" value={item.howItAppears} />
-                      <PlainTextField label="Relação com a jornada" value={item.journeyRelation} />
-                      <div className="space-y-4">
-                        <PlainTextField label="O que evitar" value={item.avoid} />
-                        <PlainTextField label="Exemplo aplicado" value={item.example} />
+                      <div className="flex items-start gap-4">
+                        <div className="mt-1 shrink-0 text-slate-500">
+                          <ModuleIcon slug="tom-de-voz" />
+                        </div>
+                        <h4 className="text-lg font-semibold leading-7 text-slate-950">
+                          {item.name}
+                        </h4>
                       </div>
+                      {hasText(item.avoid) && (
+                        <div className="flex items-start gap-4 pl-1">
+                          <span className="shrink-0 text-xl leading-7 text-slate-400" aria-hidden="true">
+                            ×
+                          </span>
+                          <div>
+                            <p className="text-sm font-semibold text-slate-600">O que evitar</p>
+                            <p className="mt-1 whitespace-pre-wrap text-sm leading-7 text-slate-700">
+                              {item.avoid}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -745,26 +548,8 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
       )}
 
       {hasVisualDirectionSection && (
-        <SectionCard title="Direção visual">
+        <SectionCard title="Identidade visual">
           <div className="space-y-4">
-            {hasText(visualStrategy) && (
-              <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                <h3 className="text-base font-semibold text-slate-950">Estratégia visual do canal</h3>
-                <RichText content={visualStrategy} className="mt-3 text-sm leading-7 text-slate-700" />
-              </div>
-            )}
-            {hasText(d.visualDirection.humanPresence) && <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200"><PlainTextField label="Presença humana" value={d.visualDirection.humanPresence} /></div>}
-            {hasText(d.visualDirection.specialistRole) && <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200"><PlainTextField label="Papel visual do especialista" value={d.visualDirection.specialistRole} /></div>}
-            {hasText(d.visualDirection.backstage) && <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200"><PlainTextField label="Bastidores" value={d.visualDirection.backstage} /></div>}
-            {hasText(d.visualDirection.socialProof) && <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200"><PlainTextField label="Provas e depoimentos" value={d.visualDirection.socialProof} /></div>}
-            {hasText(d.visualDirection.dataUsage) && <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200"><PlainTextField label="Uso de dados" value={d.visualDirection.dataUsage} /></div>}
-            {hasText(d.visualDirection.informationHierarchy) && <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200"><PlainTextField label="Hierarquia da informação" value={d.visualDirection.informationHierarchy} /></div>}
-            {hasText(d.visualDirection.visualDensity) && <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200"><PlainTextField label="Densidade visual" value={d.visualDirection.visualDensity} /></div>}
-            {hasText(d.visualDirection.desiredFeeling) && <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200"><PlainTextField label="Sensação desejada" value={d.visualDirection.desiredFeeling} /></div>}
-            {hasText(d.visualDirection.formatConsistency) && <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200"><PlainTextField label="Consistência entre formatos" value={d.visualDirection.formatConsistency} /></div>}
-            {hasText(d.visualDirection.journeyAdaptation) && <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200"><PlainTextField label="Adaptação visual à jornada" value={d.visualDirection.journeyAdaptation} /></div>}
-            {hasText(d.visualDirection.avoid) && <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200"><PlainTextField label="O que evitar" value={d.visualDirection.avoid} /></div>}
-
           {visualReferenceItems.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-xl font-semibold text-slate-950">
@@ -786,12 +571,12 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
                       />
                     )}
                     {(hasText(ref.title) || hasText(ref.description)) && (
-                      <div className="p-4">
+                      <div className="p-6">
                         {hasText(ref.title) && (
-                          <p className="text-sm font-medium text-slate-950">{ref.title}</p>
+                          <p className="text-base font-semibold text-slate-950">{ref.title}</p>
                         )}
                         {hasText(ref.description) && (
-                          <p className="mt-1 whitespace-pre-wrap text-xs leading-5 text-slate-600">
+                          <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">
                             {ref.description}
                           </p>
                         )}
@@ -819,86 +604,49 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
                 <div className="space-y-4">
                   {hasDiscoveryConversion && (
                     <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <p className="text-sm font-semibold text-slate-950">Descoberta</p>
-                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                      <h4 className="text-xl font-semibold text-slate-950">Descoberta</h4>
+                      <p className="mt-3 text-sm leading-7 text-slate-600">
                         Primeiro contato e progressão para um próximo conteúdo ou ponto de interesse.
                       </p>
-                      <PlainTextField label="CTA" value={d.conversion.discovery.cta} />
-                      <PlainTextField label="Destino" value={d.conversion.discovery.destination} />
+                      <div className="mt-5 space-y-5 border-t border-slate-200 pt-5">
+                        <PlainTextField label="CTA" value={d.conversion.discovery.cta} />
+                        <PlainTextField label="Destino" value={d.conversion.discovery.destination} />
+                      </div>
                     </div>
                   )}
                   {hasConsiderationConversion && (
                     <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <p className="text-sm font-semibold text-slate-950">Consideração</p>
-                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                      <h4 className="text-xl font-semibold text-slate-950">Consideração</h4>
+                      <p className="mt-3 text-sm leading-7 text-slate-600">
                         Aprofundamento do problema, da solução ou do método.
                       </p>
-                      <PlainTextField label="CTA" value={d.conversion.consideration.cta} />
-                      <PlainTextField label="Destino" value={d.conversion.consideration.destination} />
+                      <div className="mt-5 space-y-5 border-t border-slate-200 pt-5">
+                        <PlainTextField label="CTA" value={d.conversion.consideration.cta} />
+                        <PlainTextField label="Destino" value={d.conversion.consideration.destination} />
+                      </div>
                     </div>
                   )}
                   {hasDecisionConversion && (
                     <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <p className="text-sm font-semibold text-slate-950">Decisão</p>
-                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                      <h4 className="text-xl font-semibold text-slate-950">Decisão</h4>
+                      <p className="mt-3 text-sm leading-7 text-slate-600">
                         Encaminhamento para a ação comercial ou conversa qualificada.
                       </p>
-                      <PlainTextField label="CTA" value={d.conversion.decision.cta} />
-                      <PlainTextField label="Destino" value={d.conversion.decision.destination} />
+                      <div className="mt-5 space-y-5 border-t border-slate-200 pt-5">
+                        <PlainTextField label="CTA" value={d.conversion.decision.cta} />
+                        <PlainTextField label="Destino" value={d.conversion.decision.destination} />
+                      </div>
                     </div>
                   )}
                 </div>
               </div>
             )}
 
-            {(hasText(d.conversion.conversionPath) ||
-              hasText(d.conversion.primaryOffer) ||
-              hasText(d.conversion.commercialChannel) ||
-              hasText(d.conversion.crmIntegration)) && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-xl font-semibold text-slate-950">
-                    Caminho comercial
-                  </h3>
-                </div>
-                <div className="space-y-4">
-                  {hasText(d.conversion.conversionPath) && (
-                    <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <PlainTextField
-                        label="Caminho de conversão"
-                        value={d.conversion.conversionPath}
-                      />
-                    </div>
-                  )}
-                  {hasText(d.conversion.primaryOffer) && (
-                    <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <PlainTextField label="Oferta principal" value={d.conversion.primaryOffer} />
-                    </div>
-                  )}
-                  {hasText(d.conversion.commercialChannel) && (
-                    <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <PlainTextField
-                        label="Canal comercial"
-                        value={d.conversion.commercialChannel}
-                      />
-                    </div>
-                  )}
-                  {hasText(d.conversion.crmIntegration) && (
-                    <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <PlainTextField
-                        label="Integração com CRM"
-                        value={d.conversion.crmIntegration}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </SectionCard>
       )}
 
-      {hasMeasurementSection && (
+      {false && hasMeasurementSection && (
         <SectionCard title="Indicadores e mensuração">
           <div className="space-y-10">
             {(primaryIndicators.length > 0 ||
@@ -913,17 +661,23 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
                 <div className="space-y-4">
                   {primaryIndicators.length > 0 && (
                     <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <TextList items={primaryIndicators} label="Indicadores principais" />
+                      <div className="[&>div>p]:mb-3 [&>div>p]:mt-0 [&>div>p]:text-base [&>div>p]:font-semibold [&>div>p]:normal-case [&>div>p]:tracking-normal [&>div>p]:text-slate-950">
+                        <TextList items={primaryIndicators} label="Indicadores principais" />
+                      </div>
                     </div>
                   )}
                   {secondaryIndicators.length > 0 && (
                     <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <TextList items={secondaryIndicators} label="Indicadores secundários" />
+                      <div className="[&>div>p]:mb-3 [&>div>p]:mt-0 [&>div>p]:text-base [&>div>p]:font-semibold [&>div>p]:normal-case [&>div>p]:tracking-normal [&>div>p]:text-slate-950">
+                        <TextList items={secondaryIndicators} label="Indicadores secundários" />
+                      </div>
                     </div>
                   )}
                   {vanityMetrics.length > 0 && (
                     <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <TextList items={vanityMetrics} label="Métricas de vaidade" />
+                      <div className="[&>div>p]:mb-3 [&>div>p]:mt-0 [&>div>p]:text-base [&>div>p]:font-semibold [&>div>p]:normal-case [&>div>p]:tracking-normal [&>div>p]:text-slate-950">
+                        <TextList items={vanityMetrics} label="Métricas de vaidade" />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1005,7 +759,9 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
                   )}
                   {measurementHypotheses.length > 0 && (
                     <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <TextList items={measurementHypotheses} label="Hipóteses a testar" />
+                      <div className="[&>div>p]:mb-3 [&>div>p]:mt-0 [&>div>p]:text-base [&>div>p]:font-semibold [&>div>p]:normal-case [&>div>p]:tracking-normal [&>div>p]:text-slate-950">
+                        <TextList items={measurementHypotheses} label="Hipóteses a testar" />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1028,30 +784,23 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
             )}
             {receivesAudienceFrom.length > 0 && (
               <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                <TextList items={receivesAudienceFrom} label="Recebe audiência de" />
+                <div className="[&>div>p]:mb-3 [&>div>p]:mt-0 [&>div>p]:text-base [&>div>p]:font-semibold [&>div>p]:normal-case [&>div>p]:tracking-normal [&>div>p]:text-slate-950">
+                  <TextList items={receivesAudienceFrom} label="Recebe audiência de" />
+                </div>
               </div>
             )}
             {directsAudienceTo.length > 0 && (
               <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                <TextList items={directsAudienceTo} label="Direciona audiência para" />
-              </div>
-            )}
-            {hasText(d.integration.contentRepurposing) && (
-              <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                <PlainTextField
-                  label="Estratégia de reaproveitamento"
-                  value={d.integration.contentRepurposing}
-                />
+                <div className="[&>div>p]:mb-3 [&>div>p]:mt-0 [&>div>p]:text-base [&>div>p]:font-semibold [&>div>p]:normal-case [&>div>p]:tracking-normal [&>div>p]:text-slate-950">
+                  <TextList items={directsAudienceTo} label="Direciona audiência para" />
+                </div>
               </div>
             )}
             {connectionCtas.length > 0 && (
               <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                <TextList items={connectionCtas} label="CTAs de conexão entre canais" />
-              </div>
-            )}
-            {operationalDependencies.length > 0 && (
-              <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                <TextList items={operationalDependencies} label="Recursos e processos necessários" />
+                <div className="[&>div>p]:mb-3 [&>div>p]:mt-0 [&>div>p]:text-base [&>div>p]:font-semibold [&>div>p]:normal-case [&>div>p]:tracking-normal [&>div>p]:text-slate-950">
+                  <TextList items={connectionCtas} label="CTAs de conexão entre canais" />
+                </div>
               </div>
             )}
           </div>

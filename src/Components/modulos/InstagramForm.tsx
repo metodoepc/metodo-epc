@@ -14,7 +14,6 @@ import {
   createEmptyInstagramHashtagCategory,
   createEmptyInstagramImageReference,
   createEmptyInstagramExternalReference,
-  createEmptyInstagramProfileLink,
   createEmptyInstagramHighlight,
 } from "@/lib/normalizeInstagramData";
 import { uploadPlanningMedia } from "@/lib/uploadPlanningMedia";
@@ -27,9 +26,8 @@ const NAV_ITEMS = [
   { label: "Frequência e objetivos", id: "instagram-frequency-objectives" },
   { label: "Conteúdo", id: "instagram-content" },
   { label: "Linguagem", id: "instagram-language" },
-  { label: "Direção visual", id: "instagram-visual" },
+  { label: "Identidade visual", id: "instagram-visual" },
   { label: "Conversão", id: "instagram-conversion" },
-  { label: "Indicadores", id: "instagram-measurement" },
   { label: "Integração", id: "instagram-integration" },
   { label: "Referências", id: "instagram-references" },
 ];
@@ -100,10 +98,6 @@ function InstagramProfilePreview({ profile }: InstagramProfilePreviewProps) {
         .join("")
     : "";
 
-  const sortedLinks = [...profile.linkItems]
-    .sort((a, b) => a.order - b.order)
-    .filter((l) => l.title.trim() || l.url.trim());
-
   const sortedHighlights = [...profile.highlights]
     .sort((a, b) => a.order - b.order)
     .filter((h) => h.title.trim() || h.purpose.trim() || h.imageUrl.trim());
@@ -154,9 +148,46 @@ function InstagramProfilePreview({ profile }: InstagramProfilePreviewProps) {
             </div>
           </div>
 
+          {(profile.publicationCount ||
+            profile.followersCount ||
+            profile.followingCount) && (
+            <div className="mt-4 grid grid-cols-3 gap-3 border-t border-slate-100 pt-4 text-center">
+              {profile.publicationCount && (
+                <div>
+                  <p className="text-sm font-bold text-slate-900">
+                    {profile.publicationCount}
+                  </p>
+                  <p className="text-[11px] text-slate-500">publicações</p>
+                </div>
+              )}
+              {profile.followersCount && (
+                <div>
+                  <p className="text-sm font-bold text-slate-900">
+                    {profile.followersCount}
+                  </p>
+                  <p className="text-[11px] text-slate-500">seguidores</p>
+                </div>
+              )}
+              {profile.followingCount && (
+                <div>
+                  <p className="text-sm font-bold text-slate-900">
+                    {profile.followingCount}
+                  </p>
+                  <p className="text-[11px] text-slate-500">seguindo</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Bio-dependent content */}
           {profile.enabled ? (
             <div className="mt-4 space-y-3">
+              {profile.category && (
+                <p className="text-xs font-semibold text-slate-500">
+                  {profile.category}
+                </p>
+              )}
+
               {/* Bio HTML */}
               {profile.bio ? (
                 <div
@@ -177,24 +208,6 @@ function InstagramProfilePreview({ profile }: InstagramProfilePreviewProps) {
                 </p>
               )}
 
-              {/* Additional links */}
-              {sortedLinks.length > 0 && (
-                <div className="space-y-1.5">
-                  {sortedLinks.map((link) => (
-                    <div
-                      key={link.id}
-                      aria-label={
-                        link.url
-                          ? `${link.title || link.url}: ${link.url}`
-                          : link.title
-                      }
-                      className="truncate rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-700"
-                    >
-                      {link.title || link.url}
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           ) : (
             <p className="mt-4 text-xs italic text-slate-400">
@@ -1078,61 +1091,6 @@ export default function InstagramForm({
     }));
   }
 
-  // ─── Link items handlers ──────────────────────────────────────────────────────
-
-  function updateLinkItem(id: string, key: "title" | "url", value: string) {
-    setData((current) => ({
-      ...current,
-      profile: {
-        ...current.profile,
-        linkItems: current.profile.linkItems.map((l) =>
-          l.id === id ? { ...l, [key]: value } : l
-        ),
-      },
-    }));
-  }
-
-  function addLinkItem() {
-    setData((current) => {
-      const newLink = {
-        ...createEmptyInstagramProfileLink(),
-        order: current.profile.linkItems.length,
-      };
-      return {
-        ...current,
-        profile: {
-          ...current.profile,
-          linkItems: [...current.profile.linkItems, newLink],
-        },
-      };
-    });
-  }
-
-  function removeLinkItem(id: string) {
-    setData((current) => {
-      const reordered = current.profile.linkItems
-        .filter((l) => l.id !== id)
-        .map((l, i) => ({ ...l, order: i }));
-      return {
-        ...current,
-        profile: { ...current.profile, linkItems: reordered },
-      };
-    });
-  }
-
-  function moveLinkItem(id: string, direction: "up" | "down") {
-    setData((current) => {
-      const sorted = [...current.profile.linkItems].sort((a, b) => a.order - b.order);
-      const index = sorted.findIndex((l) => l.id === id);
-      if (index === -1) return current;
-      const targetIndex = direction === "up" ? index - 1 : index + 1;
-      if (targetIndex < 0 || targetIndex >= sorted.length) return current;
-      [sorted[index], sorted[targetIndex]] = [sorted[targetIndex], sorted[index]];
-      const reordered = sorted.map((l, i) => ({ ...l, order: i }));
-      return { ...current, profile: { ...current.profile, linkItems: reordered } };
-    });
-  }
-
   // ─── Highlights handlers ──────────────────────────────────────────────────────
 
   function updateHighlight(id: string, key: "title" | "purpose", value: string) {
@@ -1329,7 +1287,7 @@ export default function InstagramForm({
       <FormSection
         id="instagram-strategic-direction"
         title="Direção estratégica"
-        description="Defina o papel do Instagram, sua função no ecossistema e as prioridades que orientarão o canal."
+        description="Defina o papel do Instagram dentro da estratégia."
       >
         <div className="space-y-6">
           <div>
@@ -1339,97 +1297,11 @@ export default function InstagramForm({
             <p className="mb-2 text-sm leading-5 text-slate-500">
               Explique por que o Instagram existe dentro desta estratégia e qual função principal deverá cumprir.
             </p>
-            <textarea
-              value={data.strategicDirection.channelRole}
-              onChange={(event) =>
-                updateStrategicDirection("channelRole", event.target.value)
-              }
-              rows={4}
-              className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-slate-600">
-              Estratégia geral do canal
-            </label>
-            <p className="mb-2 text-sm leading-5 text-slate-500">
-              Descreva como o canal será utilizado para gerar descoberta, autoridade, relacionamento e conversão.
-            </p>
             <RichTextEditor
-              value={data.strategicDirection.generalStrategy}
+              value={data.strategicDirection.channelRole}
               onChange={(value) =>
-                updateStrategicDirection("generalStrategy", value)
+                updateStrategicDirection("channelRole", value)
               }
-              placeholder="Descreva como o canal será utilizado para gerar descoberta, autoridade, relacionamento e conversão."
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-slate-600">
-              Públicos e personas prioritárias
-            </label>
-            <p className="mb-2 text-sm leading-5 text-slate-500">
-              Identifique quais públicos e personas devem receber maior atenção no Instagram.
-            </p>
-            <textarea
-              value={data.strategicDirection.priorityAudiences}
-              onChange={(event) =>
-                updateStrategicDirection("priorityAudiences", event.target.value)
-              }
-              rows={4}
-              className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-slate-600">
-              Função no ecossistema digital
-            </label>
-            <p className="mb-2 text-sm leading-5 text-slate-500">
-              Explique de quais canais o Instagram recebe audiência e para quais destinos deverá direcioná-la.
-            </p>
-            <textarea
-              value={data.strategicDirection.ecosystemFunction}
-              onChange={(event) =>
-                updateStrategicDirection("ecosystemFunction", event.target.value)
-              }
-              rows={4}
-              className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-slate-600">
-              Diferenciação do perfil
-            </label>
-            <p className="mb-2 text-sm leading-5 text-slate-500">
-              Registre o que deverá fazer este perfil parecer diferente de concorrentes, agências ou perfis genéricos do nicho.
-            </p>
-            <textarea
-              value={data.strategicDirection.profileDifferentiation}
-              onChange={(event) =>
-                updateStrategicDirection("profileDifferentiation", event.target.value)
-              }
-              rows={4}
-              className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-slate-600">
-              Prioridades editoriais iniciais
-            </label>
-            <p className="mb-2 text-sm leading-5 text-slate-500">
-              Defina os temas, conceitos e mensagens que devem receber prioridade no primeiro ciclo editorial.
-            </p>
-            <textarea
-              value={data.strategicDirection.initialEditorialPriorities}
-              onChange={(event) =>
-                updateStrategicDirection("initialEditorialPriorities", event.target.value)
-              }
-              rows={4}
-              className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
             />
           </div>
         </div>
@@ -1541,6 +1413,94 @@ export default function InstagramForm({
                 />
               </div>
             </div>
+
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-600">
+                  Quantidade de publicações
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={data.profile.publicationCount}
+                  onChange={(event) => {
+                    if (event.target.value === "" || Number(event.target.value) >= 0) {
+                      setData((current) => ({
+                        ...current,
+                        profile: {
+                          ...current.profile,
+                          publicationCount: event.target.value,
+                        },
+                      }));
+                    }
+                  }}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-600">
+                  Quantidade de seguidores
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={data.profile.followersCount}
+                  onChange={(event) => {
+                    if (event.target.value === "" || Number(event.target.value) >= 0) {
+                      setData((current) => ({
+                        ...current,
+                        profile: {
+                          ...current.profile,
+                          followersCount: event.target.value,
+                        },
+                      }));
+                    }
+                  }}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-600">
+                  Quantidade seguindo
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={data.profile.followingCount}
+                  onChange={(event) => {
+                    if (event.target.value === "" || Number(event.target.value) >= 0) {
+                      setData((current) => ({
+                        ...current,
+                        profile: {
+                          ...current.profile,
+                          followingCount: event.target.value,
+                        },
+                      }));
+                    }
+                  }}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-600">
+                  Categoria do perfil
+                </label>
+                <input
+                  type="text"
+                  value={data.profile.category}
+                  onChange={(event) =>
+                    setData((current) => ({
+                      ...current,
+                      profile: {
+                        ...current.profile,
+                        category: event.target.value,
+                      },
+                    }))
+                  }
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                />
+              </div>
+            </div>
           </div>
         </SubSection>
 
@@ -1585,99 +1545,7 @@ export default function InstagramForm({
           </div>
         </SubSection>
 
-        {/* SubSection 3: Links do perfil */}
-        <SubSection
-          title="Links do perfil"
-          description="Lista de links adicionais que poderão ser exibidos em uma página de menu."
-        >
-          {data.profile.linkItems.length === 0 ? (
-            <div className="space-y-3">
-              <p className="text-sm text-slate-400">Nenhum link adicional cadastrado.</p>
-              <button
-                type="button"
-                onClick={addLinkItem}
-                className="cursor-pointer rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-950 hover:bg-slate-950 hover:text-white"
-              >
-                + Adicionar link
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {data.profile.linkItems
-                .slice()
-                .sort((a, b) => a.order - b.order)
-                .map((link, index, sorted) => (
-                  <div
-                    key={link.id}
-                    className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[1fr_1fr_auto]"
-                  >
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-600">
-                        Título do link
-                      </label>
-                      <input
-                        type="text"
-                        value={link.title}
-                        onChange={(event) =>
-                          updateLinkItem(link.id, "title", event.target.value)
-                        }
-                        placeholder="Ex: Site, Portfólio, WhatsApp..."
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-600">
-                        URL
-                      </label>
-                      <input
-                        type="url"
-                        value={link.url}
-                        onChange={(event) =>
-                          updateLinkItem(link.id, "url", event.target.value)
-                        }
-                        placeholder="https://..."
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                      />
-                    </div>
-                    <div className="flex flex-col items-end justify-between gap-2">
-                      <button
-                        type="button"
-                        onClick={() => moveLinkItem(link.id, "up")}
-                        disabled={index === 0}
-                        className="cursor-pointer rounded-full px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        ↑
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => moveLinkItem(link.id, "down")}
-                        disabled={index === sorted.length - 1}
-                        className="cursor-pointer rounded-full px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        ↓
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeLinkItem(link.id)}
-                        className="cursor-pointer rounded-full px-3 py-2 text-xs font-semibold text-red-500 transition hover:bg-red-50"
-                      >
-                        Excluir
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              <button
-                type="button"
-                onClick={addLinkItem}
-                className="cursor-pointer rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-950 hover:bg-slate-950 hover:text-white"
-              >
-                + Adicionar link
-              </button>
-            </div>
-          )}
-        </SubSection>
-
-        {/* SubSection 4: Destaques */}
+        {/* SubSection 3: Destaques */}
         <SubSection
           title="Destaques"
           description="Destaques fixos exibidos no perfil do Instagram."
@@ -1840,7 +1708,7 @@ export default function InstagramForm({
         {/* SubSection 1: Cadência por formato */}
         <SubSection
           title="Cadência por formato"
-          description="Defina a frequência de publicação por formato de conteúdo e o papel de cada um na jornada."
+          description="Defina a frequência de publicação por formato de conteúdo."
         >
           {data.publishing.frequencyItems.length === 0 ? (
             <div className="space-y-3">
@@ -1925,37 +1793,6 @@ export default function InstagramForm({
                       </select>
                     </div>
                   </div>
-
-                  <div className="mt-4 grid gap-4 md:grid-cols-2">
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-600">
-                        Papel na jornada
-                      </label>
-                      <input
-                        type="text"
-                        value={item.journeyRole}
-                        onChange={(event) =>
-                          updateFrequencyItem(item.id, "journeyRole", event.target.value)
-                        }
-                        placeholder="Descoberta, aprofundamento, relacionamento ou conversão"
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-600">
-                        Observações
-                      </label>
-                      <textarea
-                        value={item.notes}
-                        onChange={(event) =>
-                          updateFrequencyItem(item.id, "notes", event.target.value)
-                        }
-                        rows={2}
-                        placeholder="Ex: Priorizar conteúdos de autoridade."
-                        className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                      />
-                    </div>
-                  </div>
                 </div>
               ))}
               <button
@@ -1969,108 +1806,10 @@ export default function InstagramForm({
           )}
         </SubSection>
 
-        {/* SubSection 2: Frequência sustentável */}
-        <SubSection
-          title="Frequência sustentável"
-          description="Estabeleça os limites de produção para orientar decisões operacionais ao longo do tempo."
-        >
-          <div className="space-y-6">
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-600">
-                Frequência mínima viável
-              </label>
-              <p className="mb-2 text-xs leading-5 text-slate-500">
-                Registre a cadência mínima necessária para manter consistência sem comprometer a estratégia.
-              </p>
-              <textarea
-                value={data.publishing.minimumViableFrequency}
-                onChange={(event) =>
-                  updatePublishing("minimumViableFrequency", event.target.value)
-                }
-                rows={3}
-                className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-600">
-                Frequência recomendada
-              </label>
-              <p className="mb-2 text-xs leading-5 text-slate-500">
-                Defina a cadência considerada ideal para alcançar os objetivos do canal.
-              </p>
-              <textarea
-                value={data.publishing.recommendedFrequency}
-                onChange={(event) =>
-                  updatePublishing("recommendedFrequency", event.target.value)
-                }
-                rows={3}
-                className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-600">
-                Frequência máxima sustentável
-              </label>
-              <p className="mb-2 text-xs leading-5 text-slate-500">
-                Estabeleça o limite de produção que pode ser mantido sem comprometer qualidade ou operação.
-              </p>
-              <textarea
-                value={data.publishing.maximumSustainableFrequency}
-                onChange={(event) =>
-                  updatePublishing("maximumSustainableFrequency", event.target.value)
-                }
-                rows={3}
-                className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-              />
-            </div>
-          </div>
-        </SubSection>
-
-        {/* SubSection 3: Rotina operacional */}
-        <SubSection
-          title="Rotina operacional"
-          description="Documente como a produção e os ajustes serão gerenciados na prática."
-        >
-          <div className="space-y-6">
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-600">
-                Rotina de produção
-              </label>
-              <p className="mb-2 text-xs leading-5 text-slate-500">
-                Descreva como gravação, produção, edição, aprovação e publicação serão organizadas.
-              </p>
-              <textarea
-                value={data.publishing.productionRoutine}
-                onChange={(event) =>
-                  updatePublishing("productionRoutine", event.target.value)
-                }
-                rows={5}
-                className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-600">
-                Regra de ajuste operacional
-              </label>
-              <p className="mb-2 text-xs leading-5 text-slate-500">
-                Defina quando reduzir, ampliar ou reorganizar a frequência do canal.
-              </p>
-              <textarea
-                value={data.publishing.adjustmentRule}
-                onChange={(event) =>
-                  updatePublishing("adjustmentRule", event.target.value)
-                }
-                rows={5}
-                className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-              />
-            </div>
-          </div>
-        </SubSection>
-
-        {/* SubSection 4: Objetivos do canal */}
+        {/* SubSection 2: Objetivos do canal */}
         <SubSection
           title="Objetivos do canal"
-          description="Registre os objetivos estratégicos do Instagram com indicadores, metas e prazos."
+          description="Registre os objetivos estratégicos do Instagram."
         >
           {data.objectives.length === 0 ? (
             <div className="space-y-3">
@@ -2118,67 +1857,6 @@ export default function InstagramForm({
                         className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
                       />
                     </div>
-
-                    <div className="grid gap-4 md:grid-cols-3">
-                      <div>
-                        <label className="mb-2 block text-sm font-semibold text-slate-600">
-                          Indicador
-                        </label>
-                        <input
-                          type="text"
-                          value={obj.indicator}
-                          onChange={(event) =>
-                            updateObjective(obj.id, "indicator", event.target.value)
-                          }
-                          placeholder="Ex: cliques na bio, mensagens iniciadas..."
-                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-2 block text-sm font-semibold text-slate-600">
-                          Meta
-                        </label>
-                        <input
-                          type="text"
-                          value={obj.target}
-                          onChange={(event) =>
-                            updateObjective(obj.id, "target", event.target.value)
-                          }
-                          placeholder="Ex: 55 contatos mensais, linha de base..."
-                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-2 block text-sm font-semibold text-slate-600">
-                          Prazo
-                        </label>
-                        <input
-                          type="text"
-                          value={obj.deadline}
-                          onChange={(event) =>
-                            updateObjective(obj.id, "deadline", event.target.value)
-                          }
-                          placeholder="Ex: primeiros 30 dias, segundo mês..."
-                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-600">
-                        Status da definição
-                      </label>
-                      <select
-                        value={obj.validationStatus}
-                        onChange={(event) =>
-                          updateObjective(obj.id, "validationStatus", event.target.value)
-                        }
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-100 md:w-64"
-                      >
-                        <option value="hypothesis">Hipótese a validar</option>
-                        <option value="validated">Objetivo validado</option>
-                      </select>
-                    </div>
                   </div>
                 </div>
               ))}
@@ -2200,191 +1878,10 @@ export default function InstagramForm({
         title="Arquitetura de conteúdo"
         description="Organize os formatos, temas e possibilidades editoriais do Instagram."
       >
-        {/* SubSection 1: Formatos de conteúdo */}
-        <SubSection
-          title="Formatos de conteúdo"
-          description="Registre os formatos utilizados no canal, com estrutura, duração, papel na jornada, finalidade, CTA e observações."
-        >
-          {data.contentArchitecture.formats.length === 0 ? (
-            <div className="space-y-3">
-              <p className="text-sm text-slate-400">Nenhum formato de conteúdo cadastrado.</p>
-              <button
-                type="button"
-                onClick={addFormat}
-                className="cursor-pointer rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-950 hover:bg-slate-950 hover:text-white"
-              >
-                + Adicionar formato
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {data.contentArchitecture.formats.map((format, index) => (
-                <div
-                  key={format.id}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-5"
-                >
-                  <div className="mb-4 flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-400">
-                      Formato {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => moveFormat(format.id, "up")}
-                        disabled={index === 0}
-                        aria-label="Mover formato para cima"
-                        className="cursor-pointer rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        ↑
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => moveFormat(format.id, "down")}
-                        disabled={index === data.contentArchitecture.formats.length - 1}
-                        aria-label="Mover formato para baixo"
-                        className="cursor-pointer rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        ↓
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeFormat(format.id)}
-                        className="cursor-pointer rounded-full px-3 py-1.5 text-xs font-semibold text-red-500 transition hover:bg-red-50"
-                      >
-                        Excluir
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-[1fr_180px]">
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-600">
-                        Nome do formato
-                      </label>
-                      <input
-                        type="text"
-                        value={format.name}
-                        onChange={(event) =>
-                          updateFormat(format.id, "name", event.target.value)
-                        }
-                        placeholder="Ex.: Reenquadramento de crença, Carrossel educativo ou Live curta"
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-600">
-                        Duração ou extensão
-                      </label>
-                      <input
-                        type="text"
-                        value={format.duration}
-                        onChange={(event) =>
-                          updateFormat(format.id, "duration", event.target.value)
-                        }
-                        placeholder="30 a 45 segundos"
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-4">
-                    <label className="mb-1 block text-sm font-semibold text-slate-600">
-                      Estrutura
-                    </label>
-                    <p className="mb-2 text-xs leading-5 text-slate-500">
-                      Descreva a sequência ou construção recomendada para esse formato.
-                    </p>
-                    <textarea
-                      value={format.structure}
-                      onChange={(event) =>
-                        updateFormat(format.id, "structure", event.target.value)
-                      }
-                      rows={3}
-                      className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                    />
-                  </div>
-
-                  <div className="mt-4 grid gap-4 md:grid-cols-2">
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-600">
-                        Papel na jornada
-                      </label>
-                      <input
-                        type="text"
-                        value={format.journeyRole}
-                        onChange={(event) =>
-                          updateFormat(format.id, "journeyRole", event.target.value)
-                        }
-                        placeholder="Descoberta, consciência, consideração, decisão ou relacionamento"
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-sm font-semibold text-slate-600">
-                        CTA recomendado
-                      </label>
-                      <p className="mb-2 text-xs leading-5 text-slate-500">
-                        Registre o próximo passo mais adequado para esse formato.
-                      </p>
-                      <input
-                        type="text"
-                        value={format.cta}
-                        onChange={(event) =>
-                          updateFormat(format.id, "cta", event.target.value)
-                        }
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-4">
-                    <label className="mb-1 block text-sm font-semibold text-slate-600">
-                      Finalidade estratégica
-                    </label>
-                    <p className="mb-2 text-xs leading-5 text-slate-500">
-                      Explique o que esse formato deve gerar na estratégia do canal.
-                    </p>
-                    <textarea
-                      value={format.purpose}
-                      onChange={(event) =>
-                        updateFormat(format.id, "purpose", event.target.value)
-                      }
-                      rows={2}
-                      className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                    />
-                  </div>
-
-                  <div className="mt-4">
-                    <label className="mb-1 block text-sm font-semibold text-slate-600">
-                      Observações
-                    </label>
-                    <textarea
-                      value={format.notes}
-                      onChange={(event) =>
-                        updateFormat(format.id, "notes", event.target.value)
-                      }
-                      rows={2}
-                      placeholder="Use para regras, restrições ou aplicações específicas."
-                      className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                    />
-                  </div>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={addFormat}
-                className="cursor-pointer rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-950 hover:bg-slate-950 hover:text-white"
-              >
-                + Adicionar formato
-              </button>
-            </div>
-          )}
-        </SubSection>
-
-        {/* SubSection 2: Stories estratégicos */}
+        {/* SubSection 1: Stories estratégicos */}
         <SubSection
           title="Stories estratégicos"
-          description="Registre os tipos de Stories utilizados estrategicamente, com frequência, etapa da jornada, finalidade, CTA e descrição."
+          description="Registre os tipos de Stories utilizados estrategicamente, com frequência, etapa da jornada e CTA."
         >
           {data.contentArchitecture.stories.length === 0 ? (
             <div className="space-y-3">
@@ -2482,23 +1979,7 @@ export default function InstagramForm({
                     </div>
                   </div>
 
-                  <div className="mt-4 grid gap-4 md:grid-cols-2">
-                    <div>
-                      <label className="mb-1 block text-sm font-semibold text-slate-600">
-                        Finalidade estratégica
-                      </label>
-                      <p className="mb-2 text-xs leading-5 text-slate-500">
-                        Explique o papel desse Story na estratégia.
-                      </p>
-                      <textarea
-                        value={story.purpose}
-                        onChange={(event) =>
-                          updateStory(story.id, "purpose", event.target.value)
-                        }
-                        rows={3}
-                        className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                      />
-                    </div>
+                  <div className="mt-4">
                     <div>
                       <label className="mb-2 block text-sm font-semibold text-slate-600">
                         CTA
@@ -2514,23 +1995,6 @@ export default function InstagramForm({
                       />
                     </div>
                   </div>
-
-                  <div className="mt-4">
-                    <label className="mb-1 block text-sm font-semibold text-slate-600">
-                      Descrição
-                    </label>
-                    <p className="mb-2 text-xs leading-5 text-slate-500">
-                      Descreva como esse Story deve ser aplicado ou desenvolvido.
-                    </p>
-                    <textarea
-                      value={story.description}
-                      onChange={(event) =>
-                        updateStory(story.id, "description", event.target.value)
-                      }
-                      rows={3}
-                      className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                    />
-                  </div>
                 </div>
               ))}
               <button
@@ -2544,81 +2008,7 @@ export default function InstagramForm({
           )}
         </SubSection>
 
-        {/* SubSection 3: Diretrizes editoriais */}
-        <SubSection
-          title="Diretrizes editoriais"
-          description="Registre princípios, temas prioritários, restrições e orientações que devem ser considerados na produção de conteúdo."
-        >
-          {data.contentArchitecture.generalContentGuidelines.length === 0 ? (
-            <div className="space-y-3">
-              <p className="text-sm text-slate-400">Nenhuma diretriz editorial cadastrada.</p>
-              <button
-                type="button"
-                onClick={addContent}
-                className="cursor-pointer rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-950 hover:bg-slate-950 hover:text-white"
-              >
-                + Adicionar diretriz
-              </button>
-            </div>
-          ) : (
-            <div>
-              <div className="space-y-3">
-                {data.contentArchitecture.generalContentGuidelines.map(
-                  (guideline, index) => (
-                    <div key={index} className="flex gap-3">
-                      <textarea
-                        value={guideline}
-                        onChange={(event) => updateContent(index, event.target.value)}
-                        rows={2}
-                        placeholder="Ex.: Cada conteúdo deve partir de um sintoma reconhecível e indicar um próximo movimento."
-                        className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                      />
-                      <div className="flex flex-shrink-0 flex-col gap-1">
-                        <button
-                          type="button"
-                          onClick={() => moveContent(index, "up")}
-                          disabled={index === 0}
-                          aria-label="Mover diretriz para cima"
-                          className="cursor-pointer rounded-full px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          ↑
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => moveContent(index, "down")}
-                          disabled={
-                            index ===
-                            data.contentArchitecture.generalContentGuidelines.length - 1
-                          }
-                          aria-label="Mover diretriz para baixo"
-                          className="cursor-pointer rounded-full px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          ↓
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeContent(index)}
-                          className="cursor-pointer rounded-full px-3 py-2 text-xs font-semibold text-red-500 transition hover:bg-red-50"
-                        >
-                          Excluir
-                        </button>
-                      </div>
-                    </div>
-                  )
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={addContent}
-                className="mt-4 cursor-pointer rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-950 hover:bg-slate-950 hover:text-white"
-              >
-                + Adicionar diretriz
-              </button>
-            </div>
-          )}
-        </SubSection>
-
-        {/* SubSection 4: Hashtags */}
+        {/* SubSection 2: Hashtags */}
         <SubSection
           title="Hashtags"
           description="Registre hashtags importantes para descoberta, nicho, localização, autoridade e temas recorrentes."
@@ -2695,7 +2085,7 @@ export default function InstagramForm({
                     </div>
                   </div>
 
-                  <div className="grid gap-4 md:grid-cols-2">
+                  <div>
                     <div>
                       <label className="mb-2 block text-sm font-semibold text-slate-600">
                         Nome da estrutura
@@ -2710,41 +2100,6 @@ export default function InstagramForm({
                         className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
                       />
                     </div>
-                    <div>
-                      <label className="mb-1 block text-sm font-semibold text-slate-600">
-                        Relação com a jornada
-                      </label>
-                      <p className="mb-2 text-xs leading-5 text-slate-500">
-                        Indique em quais etapas da jornada essa estrutura é mais importante.
-                      </p>
-                      <input
-                        type="text"
-                        value={lang.journeyRelation}
-                        onChange={(event) =>
-                          updateLanguageStructure(lang.id, "journeyRelation", event.target.value)
-                        }
-                        placeholder="Ex.: Mais forte em descoberta e consciência da causa."
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-4">
-                    <label className="mb-1 block text-sm font-semibold text-slate-600">
-                      Como aparece na comunicação
-                    </label>
-                    <p className="mb-2 text-xs leading-5 text-slate-500">
-                      Explique como essa característica deve se manifestar nos conteúdos e nas falas do canal.
-                    </p>
-                    <textarea
-                      value={lang.howItAppears}
-                      onChange={(event) =>
-                        updateLanguageStructure(lang.id, "howItAppears", event.target.value)
-                      }
-                      rows={3}
-                      placeholder="Ex.: Perguntas que antecedem a recomendação e ajudam o público a analisar o próprio cenário."
-                      className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                    />
                   </div>
 
                   <div className="mt-4">
@@ -2765,23 +2120,6 @@ export default function InstagramForm({
                     />
                   </div>
 
-                  <div className="mt-4">
-                    <label className="mb-1 block text-sm font-semibold text-slate-600">
-                      Exemplo aplicado
-                    </label>
-                    <p className="mb-2 text-xs leading-5 text-slate-500">
-                      Inclua uma frase ou trecho que demonstre como essa estrutura deve ser aplicada no Instagram.
-                    </p>
-                    <textarea
-                      value={lang.example}
-                      onChange={(event) =>
-                        updateLanguageStructure(lang.id, "example", event.target.value)
-                      }
-                      rows={3}
-                      placeholder="Ex.: Você está pensando em abrir mais um canal. Antes disso: qual persona ele alcança?"
-                      className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                    />
-                  </div>
                 </div>
               ))}
               <button
@@ -2796,247 +2134,13 @@ export default function InstagramForm({
         </SubSection>
       </FormSection>
 
-      {/* ── 5. Direção visual ── */}
+      {/* ── 5. Identidade visual ── */}
       <FormSection
         id="instagram-visual"
-        title="Direção visual"
-        description="Defina a aparência, as referências e a sensação transmitida pelo perfil."
+        title="Identidade visual"
+        description="Organize as referências visuais do Instagram."
       >
-        {/* SubSection 1: Estratégia visual geral */}
-        <SubSection
-          title="Estratégia visual geral"
-          description="Descreva a lógica visual que deve orientar o perfil e os conteúdos do Instagram."
-        >
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-slate-600">
-              Estratégia visual do canal
-            </label>
-            <p className="mb-2 text-sm leading-5 text-slate-500">
-              Descreva a lógica visual que deve orientar o perfil e os conteúdos do Instagram.
-            </p>
-            <RichTextEditor
-              value={data.visualDirection.generalStrategy}
-              onChange={(value) => updateVisualDirection("generalStrategy", value)}
-              placeholder="Explique a direção visual do Instagram: estilo dos posts, cores, fundos, fotos, vídeos, ritmo, estética e referências."
-            />
-          </div>
-        </SubSection>
-
-        {/* SubSection 2: Presença e construção de autoridade */}
-        <SubSection
-          title="Presença e construção de autoridade"
-          description="Oriente como o especialista, os bastidores e as provas devem aparecer nos conteúdos."
-        >
-          <div className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-600">
-                  Presença humana
-                </label>
-                <p className="mb-2 text-xs leading-5 text-slate-500">
-                  Defina com que frequência e de que forma o especialista deve aparecer em fotos, vídeos e bastidores.
-                </p>
-                <textarea
-                  value={data.visualDirection.humanPresence}
-                  onChange={(event) =>
-                    updateVisualDirection("humanPresence", event.target.value)
-                  }
-                  rows={4}
-                  className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-600">
-                  Papel visual do especialista
-                </label>
-                <p className="mb-2 text-xs leading-5 text-slate-500">
-                  Explique como o especialista deve funcionar visualmente como protagonista, referência ou condutor da comunicação.
-                </p>
-                <textarea
-                  value={data.visualDirection.specialistRole}
-                  onChange={(event) =>
-                    updateVisualDirection("specialistRole", event.target.value)
-                  }
-                  rows={4}
-                  className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-600">
-                  Bastidores
-                </label>
-                <p className="mb-2 text-xs leading-5 text-slate-500">
-                  Registre quais processos, análises, ambientes ou momentos de trabalho podem ser mostrados sem expor informações confidenciais.
-                </p>
-                <textarea
-                  value={data.visualDirection.backstage}
-                  onChange={(event) =>
-                    updateVisualDirection("backstage", event.target.value)
-                  }
-                  rows={4}
-                  className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-600">
-                  Provas e depoimentos
-                </label>
-                <p className="mb-2 text-xs leading-5 text-slate-500">
-                  Defina como depoimentos, resultados, casos e evidências devem ser incorporados visualmente aos conteúdos.
-                </p>
-                <textarea
-                  value={data.visualDirection.socialProof}
-                  onChange={(event) =>
-                    updateVisualDirection("socialProof", event.target.value)
-                  }
-                  rows={4}
-                  className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-600">
-                Uso de dados
-              </label>
-              <p className="mb-2 text-xs leading-5 text-slate-500">
-                Oriente como números, pesquisas, indicadores e informações técnicas devem aparecer sem gerar promessas indevidas.
-              </p>
-              <textarea
-                value={data.visualDirection.dataUsage}
-                onChange={(event) =>
-                  updateVisualDirection("dataUsage", event.target.value)
-                }
-                rows={4}
-                className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-              />
-            </div>
-          </div>
-        </SubSection>
-
-        {/* SubSection 3: Organização visual dos conteúdos */}
-        <SubSection
-          title="Organização visual dos conteúdos"
-          description="Defina como a informação é estruturada visualmente em cada peça."
-        >
-          <div className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-600">
-                  Hierarquia da informação
-                </label>
-                <p className="mb-2 text-xs leading-5 text-slate-500">
-                  Defina como títulos, mensagens principais, explicações e chamadas devem ser organizados visualmente.
-                </p>
-                <textarea
-                  value={data.visualDirection.informationHierarchy}
-                  onChange={(event) =>
-                    updateVisualDirection("informationHierarchy", event.target.value)
-                  }
-                  rows={4}
-                  className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-600">
-                  Densidade visual
-                </label>
-                <p className="mb-2 text-xs leading-5 text-slate-500">
-                  Registre o nível adequado de texto, imagens e elementos por peça para evitar excesso ou superficialidade.
-                </p>
-                <textarea
-                  value={data.visualDirection.visualDensity}
-                  onChange={(event) =>
-                    updateVisualDirection("visualDensity", event.target.value)
-                  }
-                  rows={4}
-                  className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-600">
-                Sensação desejada
-              </label>
-              <p className="mb-2 text-xs leading-5 text-slate-500">
-                Descreva a percepção que o perfil e os conteúdos devem transmitir ao público.
-              </p>
-              <textarea
-                value={data.visualDirection.desiredFeeling}
-                onChange={(event) =>
-                  updateVisualDirection("desiredFeeling", event.target.value)
-                }
-                rows={3}
-                placeholder="Ex.: clareza, análise, controle, proximidade e segurança"
-                className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-600">
-                O que evitar
-              </label>
-              <p className="mb-2 text-xs leading-5 text-slate-500">
-                Registre estilos, recursos, efeitos e abordagens que contradizem o posicionamento visual do canal.
-              </p>
-              <textarea
-                value={data.visualDirection.avoid}
-                onChange={(event) =>
-                  updateVisualDirection("avoid", event.target.value)
-                }
-                rows={3}
-                className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-              />
-            </div>
-          </div>
-        </SubSection>
-
-        {/* SubSection 4: Consistência e adaptação */}
-        <SubSection
-          title="Consistência e adaptação"
-          description="Oriente como a identidade visual se mantém e se adapta entre formatos e etapas."
-        >
-          <div className="grid gap-6 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-600">
-                Consistência entre formatos
-              </label>
-              <p className="mb-2 text-xs leading-5 text-slate-500">
-                Explique quais elementos devem permanecer reconhecíveis entre Reels, carrosséis, Stories, lives e outros formatos.
-              </p>
-              <textarea
-                value={data.visualDirection.formatConsistency}
-                onChange={(event) =>
-                  updateVisualDirection("formatConsistency", event.target.value)
-                }
-                rows={4}
-                className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-600">
-                Adaptação visual à jornada
-              </label>
-              <p className="mb-2 text-xs leading-5 text-slate-500">
-                Defina como a aparência e a densidade dos conteúdos devem variar conforme descoberta, aprofundamento, relacionamento ou decisão.
-              </p>
-              <textarea
-                value={data.visualDirection.journeyAdaptation}
-                onChange={(event) =>
-                  updateVisualDirection("journeyAdaptation", event.target.value)
-                }
-                rows={4}
-                className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-              />
-            </div>
-          </div>
-        </SubSection>
-
-        {/* SubSection 5: Referências visuais */}
+        {/* SubSection 1: Referências visuais */}
         <SubSection
           title="Referências visuais"
           description="Adicione imagens que inspirem a direção visual do canal."
@@ -3341,86 +2445,10 @@ export default function InstagramForm({
           </div>
         </SubSection>
 
-        <SubSection
-          title="Caminho de conversão"
-          description="Descreva a sequência que conecta conteúdos, perfil, bio, destaques, oferta e canal comercial."
-        >
-          <textarea
-            id="conversion-path"
-            value={data.conversion.conversionPath}
-            onChange={(event) => updateConversion("conversionPath", event.target.value)}
-            rows={4}
-            placeholder="Ex.: Reel de descoberta → carrossel de aprofundamento → destaque do Diagnóstico → WhatsApp"
-            className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-          />
-        </SubSection>
-
-        <SubSection title="Oferta e operação comercial">
-          <div className="space-y-6">
-            <div>
-              <label
-                htmlFor="conversion-primary-offer"
-                className="mb-1 block text-sm font-semibold text-slate-600"
-              >
-                Oferta principal
-              </label>
-              <p className="mb-2 text-xs leading-5 text-slate-500">
-                Registre qual produto, serviço ou próximo passo comercial será priorizado pelo Instagram.
-              </p>
-              <textarea
-                id="conversion-primary-offer"
-                value={data.conversion.primaryOffer}
-                onChange={(event) => updateConversion("primaryOffer", event.target.value)}
-                rows={2}
-                className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="conversion-commercial-channel"
-                className="mb-1 block text-sm font-semibold text-slate-600"
-              >
-                Canal comercial
-              </label>
-              <p className="mb-2 text-xs leading-5 text-slate-500">
-                Defina onde a conversa comercial deverá acontecer.
-              </p>
-              <input
-                id="conversion-commercial-channel"
-                type="text"
-                value={data.conversion.commercialChannel}
-                onChange={(event) => updateConversion("commercialChannel", event.target.value)}
-                placeholder="Ex.: WhatsApp, formulário de aplicação ou reunião"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="conversion-crm-integration"
-                className="mb-1 block text-sm font-semibold text-slate-600"
-              >
-                Integração com CRM
-              </label>
-              <p className="mb-2 text-xs leading-5 text-slate-500">
-                Explique como os contatos originados pelo Instagram serão registrados, identificados e acompanhados.
-              </p>
-              <textarea
-                id="conversion-crm-integration"
-                value={data.conversion.crmIntegration}
-                onChange={(event) => updateConversion("crmIntegration", event.target.value)}
-                rows={3}
-                placeholder="Ex.: Registrar origem Instagram no CRM e acompanhar o avanço até o Diagnóstico"
-                className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-              />
-            </div>
-          </div>
-        </SubSection>
       </FormSection>
 
       {/* ── Indicadores e mensuração ── */}
-      <FormSection
+      {false && <FormSection
         id="instagram-measurement"
         title="Indicadores e mensuração"
         description="Defina como o desempenho do Instagram será acompanhado, interpretado e utilizado nas decisões estratégicas."
@@ -3944,7 +2972,7 @@ export default function InstagramForm({
             </div>
           </div>
         </SubSection>
-      </FormSection>
+      </FormSection>}
 
       {/* ── Integração com outros canais ── */}
       <FormSection
@@ -4168,31 +3196,9 @@ export default function InstagramForm({
           </div>
         </SubSection>
 
-        {/* ── 3. Reaproveitamento e conexão ── */}
-        <SubSection title="Reaproveitamento e conexão">
+        {/* ── 3. CTAs de conexão entre canais ── */}
+        <SubSection title="CTAs de conexão entre canais">
           <div className="space-y-6">
-            <div>
-              <label
-                htmlFor="integration-content-repurposing"
-                className="mb-1 block text-sm font-semibold text-slate-600"
-              >
-                Estratégia de reaproveitamento
-              </label>
-              <p className="mb-2 text-xs leading-5 text-slate-500">
-                Defina como conteúdos criados para outros canais podem ser adaptados para o Instagram e como conteúdos do Instagram podem originar materiais em outros ambientes.
-              </p>
-              <textarea
-                id="integration-content-repurposing"
-                value={data.integration.contentRepurposing}
-                onChange={(event) =>
-                  updateIntegration("contentRepurposing", event.target.value)
-                }
-                rows={4}
-                placeholder="Ex.: Transformar aulas do YouTube em Reels, carrosséis e Stories, preservando a tese central e adaptando profundidade, abertura e CTA."
-                className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-              />
-            </div>
-
             <div>
               <p className="mb-1 text-sm font-semibold text-slate-600">
                 CTAs de conexão entre canais
@@ -4289,7 +3295,7 @@ export default function InstagramForm({
         </SubSection>
 
         {/* ── 4. Dependências operacionais ── */}
-        <SubSection title="Dependências operacionais">
+        {false && <SubSection title="Dependências operacionais">
           <p className="mb-3 text-xs leading-5 text-slate-500">
             Registre recursos, processos, pessoas ou entregas necessárias para que a integração entre canais funcione.
           </p>
@@ -4377,7 +3383,7 @@ export default function InstagramForm({
               </button>
             </div>
           )}
-        </SubSection>
+        </SubSection>}
       </FormSection>
 
       {/* ── 6. Referências externas ── */}

@@ -166,6 +166,10 @@ function emptyProfile(): InstagramProfile {
     photoUrl: "",
     handle: "",
     displayName: "",
+    publicationCount: "",
+    followersCount: "",
+    followingCount: "",
+    category: "",
     bio: "",
     mainLink: "",
     linkItems: [],
@@ -539,6 +543,10 @@ function normalizeV2Profile(raw: unknown): InstagramProfile {
     photoUrl: str(raw.photoUrl), // data URL or HTTPS URL preserved
     handle: str(raw.handle),
     displayName: str(raw.displayName),
+    publicationCount: str(raw.publicationCount),
+    followersCount: str(raw.followersCount),
+    followingCount: str(raw.followingCount),
+    category: str(raw.category),
     bio: str(raw.bio),
     mainLink: str(raw.mainLink),
     linkItems: Array.isArray(raw.linkItems)
@@ -847,6 +855,10 @@ function normalizeLegacy(raw: Record<string, unknown>): InstagramData {
       photoUrl: str(raw.bioPhoto), // data URL preserved exactly
       handle: str(raw.profileHandle),
       displayName: str(raw.profileName),
+      publicationCount: "",
+      followersCount: "",
+      followingCount: "",
+      category: "",
       bio: str(raw.bioText), // Rich Text HTML preserved
       mainLink: str(raw.bioLink),
       linkItems: [],
@@ -951,6 +963,10 @@ export function hasMeaningfulInstagramContent(data: InstagramData): boolean {
     // Profile
     hasText(profile.handle) ||
     hasText(profile.displayName) ||
+    hasText(profile.publicationCount) ||
+    hasText(profile.followersCount) ||
+    hasText(profile.followingCount) ||
+    hasText(profile.category) ||
     hasHtmlContent(profile.bio) ||
     hasText(profile.mainLink) ||
     profile.highlights.some((h) => hasText(h.title)) ||
