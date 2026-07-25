@@ -1313,8 +1313,9 @@ export default function InstagramForm({
         title="Perfil do Instagram"
         description="Configure como o perfil será apresentado visualmente ao público."
       >
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] lg:items-start">
-          <div className="space-y-10">
+        <div className="space-y-10">
+          <InstagramProfilePreview profile={data.profile} />
+
         {/* SubSection 1: Identificação */}
         <SubSection
           title="Identificação do perfil"
@@ -1337,8 +1338,8 @@ export default function InstagramForm({
             </label>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-[150px_minmax(0,1fr)] md:items-start">
-            <div className="flex flex-col items-center">
+          <div className="space-y-6">
+            <div className="flex flex-col items-start">
               <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-slate-950 text-xs font-semibold text-white">
                 {data.profile.photoUrl ? (
                   <img
@@ -1377,10 +1378,10 @@ export default function InstagramForm({
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div>
               <div className="min-w-0">
                 <label className="mb-2 block text-sm font-semibold text-slate-600">
-                  Arroba do perfil
+                  Username
                 </label>
                 <input
                   type="text"
@@ -1395,6 +1396,9 @@ export default function InstagramForm({
                   className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
                 />
               </div>
+            </div>
+
+            <div>
               <div className="min-w-0">
                 <label className="mb-2 block text-sm font-semibold text-slate-600">
                   Nome do perfil
@@ -1414,7 +1418,7 @@ export default function InstagramForm({
               </div>
             </div>
 
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div>
               <div>
                 <label className="mb-2 block text-sm font-semibold text-slate-600">
                   Quantidade de publicações
@@ -1437,6 +1441,9 @@ export default function InstagramForm({
                   className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
                 />
               </div>
+            </div>
+
+            <div>
               <div>
                 <label className="mb-2 block text-sm font-semibold text-slate-600">
                   Quantidade de seguidores
@@ -1459,6 +1466,9 @@ export default function InstagramForm({
                   className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
                 />
               </div>
+            </div>
+
+            <div>
               <div>
                 <label className="mb-2 block text-sm font-semibold text-slate-600">
                   Quantidade seguindo
@@ -1481,6 +1491,9 @@ export default function InstagramForm({
                   className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
                 />
               </div>
+            </div>
+
+            <div>
               <div>
                 <label className="mb-2 block text-sm font-semibold text-slate-600">
                   Categoria do perfil
@@ -1569,9 +1582,9 @@ export default function InstagramForm({
                 .map((highlight, index, sorted) => (
                   <div
                     key={highlight.id}
-                    className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-5"
                   >
-                    <div className="flex gap-4">
+                    <div className="flex flex-col gap-5 sm:flex-row">
                       <div className="flex-shrink-0">
                         <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-slate-200">
                           {highlight.imageUrl ? (
@@ -1586,7 +1599,7 @@ export default function InstagramForm({
                         </div>
                       </div>
 
-                      <div className="grid flex-1 gap-3 md:grid-cols-2">
+                      <div className="min-w-0 flex-1 space-y-4">
                         <div>
                           <label className="mb-2 block text-sm font-semibold text-slate-600">
                             Nome do destaque
@@ -1605,19 +1618,19 @@ export default function InstagramForm({
                           <label className="mb-2 block text-sm font-semibold text-slate-600">
                             Função
                           </label>
-                          <input
-                            type="text"
+                          <textarea
                             value={highlight.purpose}
                             onChange={(event) =>
                               updateHighlight(highlight.id, "purpose", event.target.value)
                             }
+                            rows={3}
                             placeholder="Ex: Apresentar o especialista, mostrar serviços..."
-                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                            className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
                           />
                         </div>
                       </div>
 
-                      <div className="flex flex-shrink-0 flex-col items-end justify-between gap-2">
+                      <div className="flex flex-shrink-0 gap-2 sm:flex-col sm:items-end sm:justify-between">
                         <button
                           type="button"
                           onClick={() => moveHighlight(highlight.id, "up")}
@@ -1692,10 +1705,6 @@ export default function InstagramForm({
             </div>
           )}
         </SubSection>
-          </div>
-          <div>
-            <InstagramProfilePreview profile={data.profile} />
-          </div>
         </div>
       </FormSection>
 
