@@ -504,28 +504,28 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
                     Estruturas de linguagem
                   </h3>
                 </div>
-                <div className="space-y-6">
+                <div className="max-w-3xl divide-y divide-slate-200">
                   {languageStructureItems.map((item) => (
                     <div
                       key={item.id}
-                      className="space-y-4"
+                      className="py-5 first:pt-0 last:pb-0"
                     >
-                      <div className="flex items-start gap-4">
-                        <div className="mt-1 shrink-0 text-slate-500">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5 shrink-0 text-slate-600">
                           <ModuleIcon slug="tom-de-voz" />
                         </div>
-                        <h4 className="text-lg font-semibold leading-7 text-slate-950">
+                        <h4 className="text-base font-semibold leading-6 text-slate-900 md:text-lg">
                           {item.name}
                         </h4>
                       </div>
                       {hasText(item.avoid) && (
-                        <div className="flex items-start gap-4 pl-1">
-                          <span className="shrink-0 text-xl leading-7 text-slate-400" aria-hidden="true">
+                        <div className="mt-4 flex items-start gap-2 pl-8">
+                          <span className="shrink-0 text-lg font-semibold leading-6 text-red-500" aria-hidden="true">
                             ×
                           </span>
                           <div>
-                            <p className="text-sm font-semibold text-slate-600">O que evitar</p>
-                            <p className="mt-1 whitespace-pre-wrap text-sm leading-7 text-slate-700">
+                            <p className="text-sm font-semibold leading-6 text-red-600">O que evitar</p>
+                            <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700">
                               {item.avoid}
                             </p>
                           </div>
