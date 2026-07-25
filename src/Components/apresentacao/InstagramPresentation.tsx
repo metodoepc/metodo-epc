@@ -234,82 +234,92 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
 
       {hasProfileSection && (
         <SectionCard title="Apresentação visual do Instagram">
-          {(hasText(profilePhotoUrl) || hasText(profileName) || hasText(profileHandle)) && (
-            <div className="flex items-center gap-5">
-              {hasText(profilePhotoUrl) && (
-                // img used intentionally: photoUrl may be a base64 data URL (legacy) or HTTPS URL
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={profilePhotoUrl}
-                  alt={hasText(profileName) ? profileName : "Foto do perfil do Instagram"}
-                  className="h-24 w-24 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
-                />
-              )}
-              {(hasText(profileName) || hasText(profileHandle)) && (
-                <div>
+          <div className="space-y-6">
+            {(hasText(profilePhotoUrl) ||
+              hasText(profileName) ||
+              hasText(profileHandle) ||
+              hasText(profilePublicationCount) ||
+              hasText(profileFollowersCount) ||
+              hasText(profileFollowingCount)) && (
+              <div className="flex items-start gap-5 sm:gap-8">
+                {hasText(profilePhotoUrl) && (
+                  // img used intentionally: photoUrl may be a base64 data URL (legacy) or HTTPS URL
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={profilePhotoUrl}
+                    alt={hasText(profileName) ? profileName : "Foto do perfil do Instagram"}
+                    className="h-20 w-20 shrink-0 rounded-full object-cover ring-1 ring-slate-200 sm:h-24 sm:w-24"
+                  />
+                )}
+
+                <div className="min-w-0 flex-1">
                   {hasText(profileName) && (
                     <p className="text-lg font-semibold text-slate-950">{profileName}</p>
                   )}
                   {hasText(profileHandle) && (
-                    <p className="mt-0.5 text-sm text-slate-500">{profileHandle}</p>
+                    <p className="mt-0.5 truncate text-sm text-slate-500">
+                      {profileHandle.startsWith("@") ? profileHandle : `@${profileHandle}`}
+                    </p>
+                  )}
+
+                  {(hasText(profilePublicationCount) ||
+                    hasText(profileFollowersCount) ||
+                    hasText(profileFollowingCount)) && (
+                    <div className="mt-5 grid max-w-md grid-flow-col auto-cols-fr gap-3 text-center">
+                      {hasText(profilePublicationCount) && (
+                        <div>
+                          <p className="text-lg font-semibold text-slate-950">
+                            {profilePublicationCount}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">publicações</p>
+                        </div>
+                      )}
+                      {hasText(profileFollowersCount) && (
+                        <div>
+                          <p className="text-lg font-semibold text-slate-950">
+                            {profileFollowersCount}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">seguidores</p>
+                        </div>
+                      )}
+                      {hasText(profileFollowingCount) && (
+                        <div>
+                          <p className="text-lg font-semibold text-slate-950">
+                            {profileFollowingCount}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">seguindo</p>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
 
-          {(hasText(profilePublicationCount) ||
-            hasText(profileFollowersCount) ||
-            hasText(profileFollowingCount)) && (
-            <div className="mt-8 grid grid-cols-3 gap-4 border-t border-slate-100 pt-6 text-center">
-              {hasText(profilePublicationCount) && (
-                <div>
-                  <p className="text-lg font-semibold text-slate-950">
-                    {profilePublicationCount}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">publicações</p>
-                </div>
-              )}
-              {hasText(profileFollowersCount) && (
-                <div>
-                  <p className="text-lg font-semibold text-slate-950">
-                    {profileFollowersCount}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">seguidores</p>
-                </div>
-              )}
-              {hasText(profileFollowingCount) && (
-                <div>
-                  <p className="text-lg font-semibold text-slate-950">
-                    {profileFollowingCount}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">seguindo</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {hasText(profileCategory) && (
-            <FieldBlock label="Categoria" value={profileCategory} />
-          )}
-
-          <FieldBlock label="Bio" value={bioText} />
-
-          {hasText(bioLink) && (
-            <div>
-              <p className="mb-3 mt-8 text-base font-semibold uppercase tracking-[0.22em] text-[#5f6f8a]">
-                Link principal
-              </p>
-              <a
-                href={bioLink}
-                target="_blank"
-                rel="noreferrer"
-                className="break-all text-xs text-slate-500 hover:text-slate-950"
-              >
-                {bioLink}
-              </a>
-            </div>
-          )}
+            {(hasText(profileCategory) || hasText(bioText) || hasText(bioLink)) && (
+              <div className="space-y-2">
+                {hasText(profileCategory) && (
+                  <p className="text-sm text-slate-500">{profileCategory}</p>
+                )}
+                {hasText(bioText) && (
+                  <RichText
+                    content={bioText}
+                    className="whitespace-pre-wrap text-sm leading-6 text-slate-800"
+                  />
+                )}
+                {hasText(bioLink) && (
+                  <a
+                    href={bioLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block break-all text-sm font-medium text-slate-600 hover:text-slate-950"
+                  >
+                    {bioLink}
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
 
           {profileHighlights.length > 0 && (
             <div>
