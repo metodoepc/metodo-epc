@@ -815,33 +815,98 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
 
       {hasIntegrationSection && (
         <SectionCard title="Integração com outros canais">
-          <div className="space-y-4">
+          <div className="space-y-8">
             {hasText(d.integration.ecosystemRole) && (
-              <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                <PlainTextField
-                  label="Papel do Instagram no ecossistema"
-                  value={d.integration.ecosystemRole}
-                />
-              </div>
-            )}
-            {receivesAudienceFrom.length > 0 && (
-              <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                <div className="[&>div>p]:mb-3 [&>div>p]:mt-0 [&>div>p]:text-base [&>div>p]:font-semibold [&>div>p]:normal-case [&>div>p]:tracking-normal [&>div>p]:text-slate-950">
-                  <TextList items={receivesAudienceFrom} label="Recebe audiência de" />
+              <div className="rounded-2xl border border-slate-200 border-l-2 border-l-slate-400 bg-white p-5">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-400" aria-hidden="true">
+                    ◎
+                  </span>
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    Papel do Instagram no ecossistema
+                  </p>
                 </div>
+                <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                  {d.integration.ecosystemRole}
+                </p>
               </div>
             )}
-            {directsAudienceTo.length > 0 && (
-              <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                <div className="[&>div>p]:mb-3 [&>div>p]:mt-0 [&>div>p]:text-base [&>div>p]:font-semibold [&>div>p]:normal-case [&>div>p]:tracking-normal [&>div>p]:text-slate-950">
-                  <TextList items={directsAudienceTo} label="Direciona audiência para" />
-                </div>
+
+            {(receivesAudienceFrom.length > 0 || directsAudienceTo.length > 0) && (
+              <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
+                {receivesAudienceFrom.length > 0 && (
+                  <div className="h-full rounded-2xl border border-slate-200 bg-white p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                          Entrada
+                        </p>
+                        <h3 className="mt-2 text-base font-semibold text-slate-950 md:text-lg">
+                          Recebe audiência de
+                        </h3>
+                      </div>
+                      <span className="text-lg text-slate-400" aria-hidden="true">
+                        ↙
+                      </span>
+                    </div>
+                    <div className="mt-4 divide-y divide-slate-200 border-t border-slate-200">
+                      {receivesAudienceFrom.map((item, index) => (
+                        <div key={index} className="flex gap-3 py-3 first:pt-4 last:pb-0">
+                          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
+                          <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                            {item.value}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {directsAudienceTo.length > 0 && (
+                  <div className="h-full rounded-2xl border border-slate-200 bg-white p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                          Saída
+                        </p>
+                        <h3 className="mt-2 text-base font-semibold text-slate-950 md:text-lg">
+                          Direciona audiência para
+                        </h3>
+                      </div>
+                      <span className="text-lg text-slate-400" aria-hidden="true">
+                        ↗
+                      </span>
+                    </div>
+                    <div className="mt-4 divide-y divide-slate-200 border-t border-slate-200">
+                      {directsAudienceTo.map((item, index) => (
+                        <div key={index} className="flex gap-3 py-3 first:pt-4 last:pb-0">
+                          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
+                          <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                            {item.value}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
+
             {connectionCtas.length > 0 && (
-              <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                <div className="[&>div>p]:mb-3 [&>div>p]:mt-0 [&>div>p]:text-base [&>div>p]:font-semibold [&>div>p]:normal-case [&>div>p]:tracking-normal [&>div>p]:text-slate-950">
-                  <TextList items={connectionCtas} label="CTAs de conexão entre canais" />
+              <div>
+                <h3 className="text-base font-semibold text-slate-950 md:text-lg">
+                  CTAs de conexão entre canais
+                </h3>
+                <div className="mt-4 grid grid-cols-1 gap-x-6 border-t border-slate-200 md:grid-cols-2">
+                  {connectionCtas.map((item, index) => (
+                    <div key={index} className="flex gap-3 border-b border-slate-200 py-4">
+                      <span className="shrink-0 text-xs font-semibold tracking-[0.12em] text-slate-400">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                        {item.value}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
