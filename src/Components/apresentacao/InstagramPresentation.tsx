@@ -31,11 +31,6 @@ function filterFilledStrings(arr: string[]): string[] {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const VALIDATION_STATUS_LABELS: Record<"hypothesis" | "validated", string> = {
-  hypothesis: "Hipótese",
-  validated: "Validado",
-};
-
 function PlainTextField({ label, value }: { label: string; value: string }) {
   if (!hasText(value)) return null;
   return (
@@ -86,6 +81,9 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
       hasText(cat.name) ||
       hasText(cat.notes) ||
       filterFilledStrings(cat.hashtags).length > 0
+  );
+  const hashtagItems: TextItem[] = hashtagCategories.flatMap((cat) =>
+    filterFilledStrings(cat.hashtags).map((hashtag) => ({ value: hashtag }))
   );
 
   // spread before sort to avoid mutating d.visualDirection.references
@@ -158,7 +156,7 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
     objectiveItems.length > 0 ||
     strategicStories.length > 0 ||
     languageStructureItems.length > 0 ||
-    hashtagCategories.length > 0;
+    hashtagItems.length > 0;
 
   const hasVisualDirectionSection = visualReferenceItems.length > 0;
 
@@ -537,49 +535,22 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
               </div>
             )}
 
-            {hashtagCategories.length > 0 && (
+            {hashtagItems.length > 0 && (
               <div className="space-y-6">
                 <div>
                   <h3 className="text-xl font-semibold text-slate-950">
                     Hashtags
                   </h3>
                 </div>
-                <div className="space-y-4">
-                  {hashtagCategories.map((cat) => {
-                    const filledHashtags: TextItem[] = filterFilledStrings(cat.hashtags).map(
-                      (h) => ({ value: h })
-                    );
-                    return (
-                      <div
-                        key={cat.id}
-                        className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200"
-                      >
-                        <PlainTextField label="Categoria" value={cat.name} />
-                        {filledHashtags.length > 0 && (
-                          <div>
-                            <h4 className="text-base font-semibold text-slate-950">
-                              Hashtags da categoria
-                            </h4>
-                            <div className="mt-4 flex flex-wrap gap-2">
-                              {filledHashtags.map((hashtag, index) => (
-                                <span
-                                  key={`${cat.id}-${index}`}
-                                  className="rounded-full bg-white px-3 py-1 text-sm text-slate-700 ring-1 ring-slate-200"
-                                >
-                                  {hashtag.value}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        <PlainTextField label="Observações" value={cat.notes} />
-                        <PlainTextField
-                          label="Status de validação"
-                          value={VALIDATION_STATUS_LABELS[cat.validationStatus]}
-                        />
-                      </div>
-                    );
-                  })}
+                <div className="flex flex-wrap gap-2">
+                  {hashtagItems.map((hashtag, index) => (
+                    <span
+                      key={index}
+                      className="max-w-full break-words rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700"
+                    >
+                      {hashtag.value}
+                    </span>
+                  ))}
                 </div>
               </div>
             )}
