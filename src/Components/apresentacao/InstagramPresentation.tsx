@@ -139,7 +139,11 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
   // ─── Referências externas ───────────────────────────────────────────────────
   // url (v2) ← references[].link (v1 legacy)
   const externalReferenceItems = d.externalReferences.filter(
-    (ref) => hasText(ref.title) || hasText(ref.url) || hasText(ref.notes)
+    (ref) =>
+      hasText(ref.imageUrl) ||
+      hasText(ref.title) ||
+      hasText(ref.url) ||
+      hasText(ref.notes)
   );
 
   // ─── Condições de seção ─────────────────────────────────────────────────────
@@ -815,6 +819,14 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
                 key={ref.id}
                 className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200"
               >
+                {hasText(ref.imageUrl) && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={ref.imageUrl}
+                    alt={hasText(ref.title) ? ref.title : "Imagem da referência externa"}
+                    className="mb-5 aspect-video w-full rounded-2xl object-cover"
+                  />
+                )}
                 {hasText(ref.title) && (
                   <h3 className="text-base font-semibold text-slate-950">{ref.title}</h3>
                 )}

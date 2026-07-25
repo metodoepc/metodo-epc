@@ -200,6 +200,7 @@ export type InstagramHashtagCategory = {
 
 export type InstagramExternalReference = {
   id: string;
+  imageUrl: string;
   title: string;
   url: string; // was "link" in legacy
   notes: string;

@@ -287,6 +287,10 @@ export default function InstagramForm({
   const [refUploadErrors, setRefUploadErrors] = useState<Record<string, string>>({});
   const [uploadingHighlightId, setUploadingHighlightId] = useState<string | null>(null);
   const [highlightUploadErrors, setHighlightUploadErrors] = useState<Record<string, string>>({});
+  const [uploadingExternalReferenceId, setUploadingExternalReferenceId] =
+    useState<string | null>(null);
+  const [externalReferenceUploadErrors, setExternalReferenceUploadErrors] =
+    useState<Record<string, string>>({});
 
   // ─── Frequency handlers ─────────────────────────────────────────────────────
 
@@ -1062,6 +1066,14 @@ export default function InstagramForm({
       ...current,
       externalReferences: current.externalReferences.filter((ref) => ref.id !== id),
     }));
+    setExternalReferenceUploadErrors((current) => {
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+    if (uploadingExternalReferenceId === id) {
+      setUploadingExternalReferenceId(null);
+    }
   }
 
   function moveExternalReference(id: string, direction: "up" | "down") {
@@ -1074,6 +1086,53 @@ export default function InstagramForm({
       [arr[index], arr[targetIndex]] = [arr[targetIndex], arr[index]];
       return { ...current, externalReferences: arr };
     });
+  }
+
+  async function uploadExternalReferenceImage(
+    id: string,
+    event: ChangeEvent<HTMLInputElement>
+  ) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadingExternalReferenceId(id);
+    setExternalReferenceUploadErrors((current) => {
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+
+    try {
+      const { url } = await uploadPlanningMedia({
+        file,
+        planningProjectId,
+        category: "references",
+      });
+
+      setData((current) => ({
+        ...current,
+        externalReferences: current.externalReferences.map((ref) =>
+          ref.id === id ? { ...ref, imageUrl: url } : ref
+        ),
+      }));
+    } catch (err) {
+      setExternalReferenceUploadErrors((current) => ({
+        ...current,
+        [id]: err instanceof Error ? err.message : "Erro ao enviar imagem.",
+      }));
+    } finally {
+      setUploadingExternalReferenceId(null);
+      event.target.value = "";
+    }
+  }
+
+  function removeExternalReferenceImage(id: string) {
+    setData((current) => ({
+      ...current,
+      externalReferences: current.externalReferences.map((ref) =>
+        ref.id === id ? { ...ref, imageUrl: "" } : ref
+      ),
+    }));
   }
 
   // ─── Strategic direction handler ─────────────────────────────────────────────
@@ -3455,6 +3514,63 @@ export default function InstagramForm({
                       >
                         Excluir
                       </button>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <div className="overflow-hidden rounded-2xl border border-dashed border-slate-300 bg-white">
+                      {reference.imageUrl ? (
+                        <img
+                          src={reference.imageUrl}
+                          alt={reference.title || "Imagem da referência externa"}
+                          className="aspect-video w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex aspect-video items-center justify-center text-sm font-semibold text-slate-400">
+                          Nenhuma imagem cadastrada
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-3">
+                      <label
+                        className={`cursor-pointer rounded-full px-4 py-2 text-xs font-semibold transition ${
+                          uploadingExternalReferenceId === reference.id
+                            ? "bg-slate-200 text-slate-500"
+                            : "bg-slate-950 text-white hover:bg-slate-800"
+                        }`}
+                      >
+                        {uploadingExternalReferenceId === reference.id
+                          ? "Enviando..."
+                          : reference.imageUrl
+                            ? "Trocar imagem"
+                            : "Enviar imagem"}
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          onChange={(event) =>
+                            uploadExternalReferenceImage(reference.id, event)
+                          }
+                          disabled={uploadingExternalReferenceId !== null}
+                          className="hidden"
+                        />
+                      </label>
+
+                      {reference.imageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => removeExternalReferenceImage(reference.id)}
+                          className="cursor-pointer rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+                        >
+                          Remover imagem
+                        </button>
+                      )}
+
+                      {externalReferenceUploadErrors[reference.id] && (
+                        <p className="text-xs text-red-500">
+                          {externalReferenceUploadErrors[reference.id]}
+                        </p>
+                      )}
                     </div>
                   </div>
 

@@ -141,6 +141,7 @@ export function createEmptyInstagramHashtagCategory(): InstagramHashtagCategory 
 export function createEmptyInstagramExternalReference(): InstagramExternalReference {
   return {
     id: createInstagramItemId(),
+    imageUrl: "",
     title: "",
     url: "",
     notes: "",
@@ -439,7 +440,7 @@ function normalizeLegacyExternalReferences(raw: unknown): InstagramExternalRefer
     const title = str(obj.title);
     const url = str(obj.link); // legacy field name → url
     if (!title.trim() && !url.trim()) continue;
-    result.push({ id: createInstagramItemId(), title, url, notes: "" });
+    result.push({ id: createInstagramItemId(), imageUrl: "", title, url, notes: "" });
   }
   return result;
 }
@@ -740,6 +741,7 @@ function normalizeV2ExternalReference(item: unknown): InstagramExternalReference
   if (!isObj(item)) return null;
   return {
     id: hasValidId(item.id) ? item.id : createInstagramItemId(),
+    imageUrl: str(item.imageUrl),
     title: str(item.title),
     url: str(item.url),
     notes: str(item.notes),
@@ -1017,7 +1019,9 @@ export function hasMeaningfulInstagramContent(data: InstagramData): boolean {
     hashtags.some((c) => c.hashtags.some(hasText)) ||
 
     // External references
-    externalReferences.some((r) => hasText(r.title) || hasText(r.url))
+    externalReferences.some(
+      (r) => hasText(r.imageUrl) || hasText(r.title) || hasText(r.url)
+    )
   );
 }
 
