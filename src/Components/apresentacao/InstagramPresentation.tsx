@@ -172,10 +172,32 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
     hasText(d.conversion.decision.cta) ||
     hasText(d.conversion.decision.destination);
 
-  const hasConversionSection =
-    hasDiscoveryConversion ||
-    hasConsiderationConversion ||
-    hasDecisionConversion;
+  const conversionStages = [
+    {
+      name: "Descoberta",
+      description:
+        "Primeiro contato e progressão para um próximo conteúdo ou ponto de interesse.",
+      cta: d.conversion.discovery.cta,
+      destination: d.conversion.discovery.destination,
+      visible: hasDiscoveryConversion,
+    },
+    {
+      name: "Consideração",
+      description: "Aprofundamento do problema, da solução ou do método.",
+      cta: d.conversion.consideration.cta,
+      destination: d.conversion.consideration.destination,
+      visible: hasConsiderationConversion,
+    },
+    {
+      name: "Decisão",
+      description: "Encaminhamento para a ação comercial ou conversa qualificada.",
+      cta: d.conversion.decision.cta,
+      destination: d.conversion.decision.destination,
+      visible: hasDecisionConversion,
+    },
+  ].filter((stage) => stage.visible);
+
+  const hasConversionSection = conversionStages.length > 0;
 
   const hasMeasurementSection =
     primaryIndicators.length > 0 ||
@@ -604,55 +626,64 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
 
       {hasConversionSection && (
         <SectionCard title="Conversão">
-          <div className="space-y-10">
-            {(hasDiscoveryConversion || hasConsiderationConversion || hasDecisionConversion) && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-xl font-semibold text-slate-950">
-                    Etapas de conversão
-                  </h3>
+          <div className="space-y-5">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-500">
+              Etapas de conversão
+            </h3>
+            <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {conversionStages.map((stage, index) => (
+                <div
+                  key={stage.name}
+                  className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5"
+                >
+                  <div>
+                    <p className="text-xs font-semibold tracking-[0.14em] text-slate-400">
+                      {String(index + 1).padStart(2, "0")}
+                    </p>
+                    <h4 className="mt-2 font-serif text-[17px] font-semibold leading-6 text-slate-950 md:text-lg">
+                      {stage.name}
+                    </h4>
+                    <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                      {stage.description}
+                    </p>
+                  </div>
+                  {(hasText(stage.cta) || hasText(stage.destination)) && (
+                    <div className="mt-5">
+                      {hasText(stage.cta) && (
+                        <div className="border-t border-slate-200 pt-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-slate-400" aria-hidden="true">
+                              ↗
+                            </span>
+                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                              CTA
+                            </p>
+                          </div>
+                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                            {stage.cta}
+                          </p>
+                        </div>
+                      )}
+                      {hasText(stage.destination) && (
+                        <div className="mt-4 border-t border-slate-200 pt-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-slate-400" aria-hidden="true">
+                              →
+                            </span>
+                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                              Destino
+                            </p>
+                          </div>
+                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                            {stage.destination}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div className="space-y-4">
-                  {hasDiscoveryConversion && (
-                    <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <h4 className="text-xl font-semibold text-slate-950">Descoberta</h4>
-                      <p className="mt-3 text-sm leading-7 text-slate-600">
-                        Primeiro contato e progressão para um próximo conteúdo ou ponto de interesse.
-                      </p>
-                      <div className="mt-5 space-y-5 border-t border-slate-200 pt-5">
-                        <PlainTextField label="CTA" value={d.conversion.discovery.cta} />
-                        <PlainTextField label="Destino" value={d.conversion.discovery.destination} />
-                      </div>
-                    </div>
-                  )}
-                  {hasConsiderationConversion && (
-                    <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <h4 className="text-xl font-semibold text-slate-950">Consideração</h4>
-                      <p className="mt-3 text-sm leading-7 text-slate-600">
-                        Aprofundamento do problema, da solução ou do método.
-                      </p>
-                      <div className="mt-5 space-y-5 border-t border-slate-200 pt-5">
-                        <PlainTextField label="CTA" value={d.conversion.consideration.cta} />
-                        <PlainTextField label="Destino" value={d.conversion.consideration.destination} />
-                      </div>
-                    </div>
-                  )}
-                  {hasDecisionConversion && (
-                    <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <h4 className="text-xl font-semibold text-slate-950">Decisão</h4>
-                      <p className="mt-3 text-sm leading-7 text-slate-600">
-                        Encaminhamento para a ação comercial ou conversa qualificada.
-                      </p>
-                      <div className="mt-5 space-y-5 border-t border-slate-200 pt-5">
-                        <PlainTextField label="CTA" value={d.conversion.decision.cta} />
-                        <PlainTextField label="Destino" value={d.conversion.decision.destination} />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
+              ))}
+            </div>
           </div>
         </SectionCard>
       )}
