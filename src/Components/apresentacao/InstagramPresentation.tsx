@@ -375,29 +375,27 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
 
       {hasFrequencySection && (
         <SectionCard title="Frequência de publicação">
-          <div className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {visibleFreqItems.map((item) => (
-              <div key={item.id} className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
+              <div
+                key={item.id}
+                className="rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300"
+              >
                 {hasText(item.format) && (
-                  <h3 className="text-xl font-semibold text-slate-950">{item.format}</h3>
+                  <h3 className="text-lg font-semibold text-slate-950">{item.format}</h3>
                 )}
                 {(hasText(item.quantity) || hasText(item.period)) && (
-                  <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  <div className="mt-3 flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
                     {hasText(item.quantity) && (
-                      <div>
-                        <p className="text-sm font-medium text-slate-500">Quantidade</p>
-                        <p className="mt-1 whitespace-pre-wrap text-sm leading-7 text-slate-700">
-                          {item.quantity}
-                        </p>
-                      </div>
+                      <p className="whitespace-pre-wrap text-2xl font-semibold leading-none text-slate-950">
+                        {item.quantity}
+                        {hasText(item.period) && "×"}
+                      </p>
                     )}
                     {hasText(item.period) && (
-                      <div>
-                        <p className="text-sm font-medium text-slate-500">Período</p>
-                        <p className="mt-1 whitespace-pre-wrap text-sm leading-7 text-slate-700">
-                          {item.period}
-                        </p>
-                      </div>
+                      <p className="whitespace-pre-wrap text-sm text-slate-500">
+                        {item.period}
+                      </p>
                     )}
                   </div>
                 )}
