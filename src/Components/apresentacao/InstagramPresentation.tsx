@@ -440,27 +440,55 @@ export default function InstagramPresentation({ data }: InstagramPresentationPro
                     Stories estratégicos
                   </h3>
                 </div>
-                <div className="space-y-4">
-                  {strategicStories.map((item) => (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {strategicStories.map((item, index) => (
                     <div
                       key={item.id}
-                      className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200"
+                      className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5"
                     >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
+                          STORY {String(index + 1).padStart(2, "0")}
+                        </p>
+                        {hasText(item.journeyStage) && (
+                          <p className="max-w-full rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                            {item.journeyStage}
+                          </p>
+                        )}
+                      </div>
+
                       {hasText(item.name) && (
-                        <div>
-                          <p className="text-sm font-medium text-slate-500">Nome do Story estratégico</p>
-                          <h4 className="mt-2 text-xl font-semibold text-slate-950">{item.name}</h4>
+                        <h4 className="mt-5 text-xl font-semibold leading-7 text-slate-950">
+                          {item.name}
+                        </h4>
+                      )}
+
+                      {hasText(item.frequency) && (
+                        <div className="mt-4 flex items-center gap-2 text-slate-500">
+                          <div className="shrink-0">
+                            <ModuleIcon slug="calendario-de-conteudo" />
+                          </div>
+                          <p className="whitespace-pre-wrap text-sm leading-6">
+                            {item.frequency}
+                          </p>
                         </div>
                       )}
-                      {(hasText(item.frequency) || hasText(item.journeyStage)) && (
-                        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                        <PlainTextField label="Frequência" value={item.frequency} />
-                        <PlainTextField label="Etapa da jornada" value={item.journeyStage} />
-                        </div>
-                      )}
+
                       {hasText(item.cta) && (
-                        <div className="mt-5 border-t border-slate-200 pt-5">
-                          <PlainTextField label="CTA" value={item.cta} />
+                        <div className="mt-auto pt-5">
+                          <div className="border-t border-slate-200 pt-4">
+                            <p className="text-xs font-semibold tracking-[0.16em] text-slate-400">
+                              CTA
+                            </p>
+                            <div className="mt-2 flex items-start justify-between gap-4">
+                              <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                                {item.cta}
+                              </p>
+                              <span className="shrink-0 text-lg leading-6 text-slate-400" aria-hidden="true">
+                                →
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
