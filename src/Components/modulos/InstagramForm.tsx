@@ -17,6 +17,7 @@ import {
   createEmptyInstagramHighlight,
 } from "@/lib/normalizeInstagramData";
 import { uploadPlanningMedia } from "@/lib/uploadPlanningMedia";
+import InstagramAdminStrategyForm from "@/Components/modulos/InstagramAdminStrategyForm";
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
 
@@ -1319,6 +1320,20 @@ export default function InstagramForm({
   }
 
   // Derived flat lists
+
+  return (
+    <InstagramAdminStrategyForm
+      data={data}
+      setData={setData}
+      clientSlug={clientSlug}
+      presentationHref={presentationHref}
+      isSaving={isSaving}
+      isDisabled={isDisabled}
+      onSave={onSave}
+      planningProjectId={planningProjectId}
+      profilePreview={<InstagramProfilePreview profile={data.profile} />}
+    />
+  );
 
   // ─── JSX ─────────────────────────────────────────────────────────────────────
 

@@ -206,6 +206,79 @@ export type InstagramExternalReference = {
   notes: string;
 };
 
+// ─── Administrative strategy fields ─────────────────────────────────────────
+
+export type InstagramPriorityAudience = {
+  id: string;
+  name: string;
+  percentage: string;
+  description: string;
+};
+
+export type InstagramBioPath = {
+  id: string;
+  name: string;
+  destination: string;
+  description: string;
+};
+
+export type InstagramPinnedPost = {
+  id: string;
+  imageUrl: string;
+  title: string;
+  strategicRole: string;
+  notes: string;
+};
+
+export type InstagramTextDirective = {
+  id: string;
+  value: string;
+};
+
+export type InstagramCarouselPage = {
+  id: string;
+  imageUrl: string;
+  pageType: "Capa" | "Página interna" | "Página final / CTA";
+  title: string;
+  order: number;
+};
+
+export type InstagramSingleImageSimulation = {
+  imageUrl: string;
+  title: string;
+  description: string;
+};
+
+export type InstagramContentFront = {
+  id: string;
+  name: string;
+  percentage: string;
+  description: string;
+};
+
+export type InstagramConversionStep = {
+  id: string;
+  value: string;
+};
+
+export type InstagramConversionRoute = {
+  id: string;
+  name: string;
+  audience: string;
+  steps: InstagramConversionStep[];
+};
+
+export type InstagramIndicator = {
+  id: string;
+  name: string;
+};
+
+export type InstagramIndicatorCategory = {
+  id: string;
+  name: string;
+  indicators: InstagramIndicator[];
+};
+
 // ─── Legacy Compatibility ────────────────────────────────────────────────────
 
 export type InstagramLegacyCompatibility = {
@@ -229,5 +302,18 @@ export type InstagramData = {
   integration: InstagramChannelIntegration;
   hashtags: InstagramHashtagCategory[];
   externalReferences: InstagramExternalReference[];
+  priorityAudiences?: InstagramPriorityAudience[];
+  bioPaths?: InstagramBioPath[];
+  pinnedPosts?: InstagramPinnedPost[];
+  visualGuideline?: string;
+  visualElements?: InstagramTextDirective[];
+  visualAvoidItems?: InstagramTextDirective[];
+  carouselSimulation?: InstagramCarouselPage[];
+  staticCardSimulation?: InstagramSingleImageSimulation;
+  reelCoverSimulation?: InstagramSingleImageSimulation;
+  contentFronts?: InstagramContentFront[];
+  conversionRoutes?: InstagramConversionRoute[];
+  hashtagUsageGuidance?: string;
+  indicatorCategories?: InstagramIndicatorCategory[];
   legacy?: InstagramLegacyCompatibility;
 };

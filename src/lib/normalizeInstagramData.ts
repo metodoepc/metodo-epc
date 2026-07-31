@@ -20,6 +20,17 @@ import type {
   InstagramMeasurementStrategy,
   InstagramChannelIntegration,
   InstagramLegacyCompatibility,
+  InstagramPriorityAudience,
+  InstagramBioPath,
+  InstagramPinnedPost,
+  InstagramTextDirective,
+  InstagramCarouselPage,
+  InstagramSingleImageSimulation,
+  InstagramContentFront,
+  InstagramConversionRoute,
+  InstagramConversionStep,
+  InstagramIndicatorCategory,
+  InstagramIndicator,
 } from "@/types/instagram";
 
 // ─── ID generation ───────────────────────────────────────────────────────────
@@ -148,6 +159,50 @@ export function createEmptyInstagramExternalReference(): InstagramExternalRefere
   };
 }
 
+export function createEmptyInstagramPriorityAudience(): InstagramPriorityAudience {
+  return { id: createInstagramItemId(), name: "", percentage: "", description: "" };
+}
+
+export function createEmptyInstagramBioPath(): InstagramBioPath {
+  return { id: createInstagramItemId(), name: "", destination: "", description: "" };
+}
+
+export function createEmptyInstagramPinnedPost(): InstagramPinnedPost {
+  return { id: createInstagramItemId(), imageUrl: "", title: "", strategicRole: "", notes: "" };
+}
+
+export function createEmptyInstagramTextDirective(): InstagramTextDirective {
+  return { id: createInstagramItemId(), value: "" };
+}
+
+export function createEmptyInstagramCarouselPage(): InstagramCarouselPage {
+  return { id: createInstagramItemId(), imageUrl: "", pageType: "Capa", title: "", order: 0 };
+}
+
+export function createEmptyInstagramSingleImageSimulation(): InstagramSingleImageSimulation {
+  return { imageUrl: "", title: "", description: "" };
+}
+
+export function createEmptyInstagramContentFront(): InstagramContentFront {
+  return { id: createInstagramItemId(), name: "", percentage: "", description: "" };
+}
+
+export function createEmptyInstagramConversionStep(): InstagramConversionStep {
+  return { id: createInstagramItemId(), value: "" };
+}
+
+export function createEmptyInstagramConversionRoute(): InstagramConversionRoute {
+  return { id: createInstagramItemId(), name: "", audience: "", steps: [] };
+}
+
+export function createEmptyInstagramIndicator(): InstagramIndicator {
+  return { id: createInstagramItemId(), name: "" };
+}
+
+export function createEmptyInstagramIndicatorCategory(): InstagramIndicatorCategory {
+  return { id: createInstagramItemId(), name: "", indicators: [] };
+}
+
 // ─── Empty section factories (internal) ──────────────────────────────────────
 
 function emptyStrategicDirection(): InstagramStrategicDirection {
@@ -274,6 +329,19 @@ export function createEmptyInstagramData(): InstagramData {
     integration: emptyIntegration(),
     hashtags: [],
     externalReferences: [],
+    priorityAudiences: [],
+    bioPaths: [],
+    pinnedPosts: Array.from({ length: 3 }, createEmptyInstagramPinnedPost),
+    visualGuideline: "",
+    visualElements: [],
+    visualAvoidItems: [],
+    carouselSimulation: [],
+    staticCardSimulation: createEmptyInstagramSingleImageSimulation(),
+    reelCoverSimulation: createEmptyInstagramSingleImageSimulation(),
+    contentFronts: [],
+    conversionRoutes: [],
+    hashtagUsageGuidance: "",
+    indicatorCategories: [],
   };
 }
 
@@ -412,7 +480,7 @@ function normalizeLegacyLanguageStructures(raw: unknown): InstagramLanguageStruc
   return result;
 }
 
-// hashtags[].value → single category "Hashtags existentes"
+// hashtags[].value → single category "Geral"
 function normalizeLegacyHashtags(raw: unknown): InstagramHashtagCategory[] {
   if (!Array.isArray(raw)) return [];
   const values = raw
@@ -422,7 +490,7 @@ function normalizeLegacyHashtags(raw: unknown): InstagramHashtagCategory[] {
   return [
     {
       id: createInstagramItemId(),
-      name: "Hashtags existentes",
+      name: "Geral",
       hashtags: values, // no classification by niche/problem/solution
       notes: "",
       validationStatus: "hypothesis",
@@ -748,6 +816,118 @@ function normalizeV2ExternalReference(item: unknown): InstagramExternalReference
   };
 }
 
+function normalizePriorityAudience(item: unknown): InstagramPriorityAudience | null {
+  if (!isObj(item)) return null;
+  return {
+    id: hasValidId(item.id) ? item.id : createInstagramItemId(),
+    name: str(item.name),
+    percentage: str(item.percentage),
+    description: str(item.description),
+  };
+}
+
+function normalizeBioPath(item: unknown): InstagramBioPath | null {
+  if (!isObj(item)) return null;
+  return {
+    id: hasValidId(item.id) ? item.id : createInstagramItemId(),
+    name: str(item.name),
+    destination: str(item.destination),
+    description: str(item.description),
+  };
+}
+
+function normalizePinnedPost(item: unknown): InstagramPinnedPost | null {
+  if (!isObj(item)) return null;
+  return {
+    id: hasValidId(item.id) ? item.id : createInstagramItemId(),
+    imageUrl: str(item.imageUrl),
+    title: str(item.title),
+    strategicRole: str(item.strategicRole),
+    notes: str(item.notes),
+  };
+}
+
+function normalizeTextDirective(item: unknown): InstagramTextDirective | null {
+  if (!isObj(item)) return null;
+  return {
+    id: hasValidId(item.id) ? item.id : createInstagramItemId(),
+    value: str(item.value),
+  };
+}
+
+function normalizeCarouselPage(item: unknown, index: number): InstagramCarouselPage | null {
+  if (!isObj(item)) return null;
+  const pageType = str(item.pageType);
+  return {
+    id: hasValidId(item.id) ? item.id : createInstagramItemId(),
+    imageUrl: str(item.imageUrl),
+    pageType:
+      pageType === "Página interna" || pageType === "Página final / CTA"
+        ? pageType
+        : "Capa",
+    title: str(item.title),
+    order: typeof item.order === "number" ? item.order : index,
+  };
+}
+
+function normalizeSingleImageSimulation(value: unknown): InstagramSingleImageSimulation {
+  if (!isObj(value)) return createEmptyInstagramSingleImageSimulation();
+  return {
+    imageUrl: str(value.imageUrl),
+    title: str(value.title),
+    description: str(value.description),
+  };
+}
+
+function normalizeContentFront(item: unknown): InstagramContentFront | null {
+  if (!isObj(item)) return null;
+  return {
+    id: hasValidId(item.id) ? item.id : createInstagramItemId(),
+    name: str(item.name),
+    percentage: str(item.percentage),
+    description: str(item.description),
+  };
+}
+
+function normalizeConversionStep(item: unknown): InstagramConversionStep | null {
+  if (!isObj(item)) return null;
+  return {
+    id: hasValidId(item.id) ? item.id : createInstagramItemId(),
+    value: str(item.value),
+  };
+}
+
+function normalizeConversionRoute(item: unknown): InstagramConversionRoute | null {
+  if (!isObj(item)) return null;
+  return {
+    id: hasValidId(item.id) ? item.id : createInstagramItemId(),
+    name: str(item.name),
+    audience: str(item.audience),
+    steps: Array.isArray(item.steps)
+      ? item.steps.map(normalizeConversionStep).filter((step): step is InstagramConversionStep => step !== null)
+      : [],
+  };
+}
+
+function normalizeIndicator(item: unknown): InstagramIndicator | null {
+  if (!isObj(item)) return null;
+  return {
+    id: hasValidId(item.id) ? item.id : createInstagramItemId(),
+    name: str(item.name),
+  };
+}
+
+function normalizeIndicatorCategory(item: unknown): InstagramIndicatorCategory | null {
+  if (!isObj(item)) return null;
+  return {
+    id: hasValidId(item.id) ? item.id : createInstagramItemId(),
+    name: str(item.name),
+    indicators: Array.isArray(item.indicators)
+      ? item.indicators.map(normalizeIndicator).filter((indicator): indicator is InstagramIndicator => indicator !== null)
+      : [],
+  };
+}
+
 // ─── V2 root normalizer ───────────────────────────────────────────────────────
 
 const KNOWN_V2_KEYS = new Set([
@@ -764,6 +944,19 @@ const KNOWN_V2_KEYS = new Set([
   "integration",
   "hashtags",
   "externalReferences",
+  "priorityAudiences",
+  "bioPaths",
+  "pinnedPosts",
+  "visualGuideline",
+  "visualElements",
+  "visualAvoidItems",
+  "carouselSimulation",
+  "staticCardSimulation",
+  "reelCoverSimulation",
+  "contentFronts",
+  "conversionRoutes",
+  "hashtagUsageGuidance",
+  "indicatorCategories",
   "legacy",
 ]);
 
@@ -808,6 +1001,41 @@ function normalizeV2(raw: Record<string, unknown>): InstagramData {
       ? raw.externalReferences
           .map(normalizeV2ExternalReference)
           .filter((r): r is InstagramExternalReference => r !== null)
+      : [],
+    priorityAudiences: Array.isArray(raw.priorityAudiences)
+      ? raw.priorityAudiences.map(normalizePriorityAudience).filter((item): item is InstagramPriorityAudience => item !== null)
+      : [],
+    bioPaths: Array.isArray(raw.bioPaths)
+      ? raw.bioPaths.map(normalizeBioPath).filter((item): item is InstagramBioPath => item !== null)
+      : [],
+    pinnedPosts: (() => {
+      const items = Array.isArray(raw.pinnedPosts)
+        ? raw.pinnedPosts.map(normalizePinnedPost).filter((item): item is InstagramPinnedPost => item !== null).slice(0, 3)
+        : [];
+      while (items.length < 3) items.push(createEmptyInstagramPinnedPost());
+      return items;
+    })(),
+    visualGuideline: str(raw.visualGuideline),
+    visualElements: Array.isArray(raw.visualElements)
+      ? raw.visualElements.map(normalizeTextDirective).filter((item): item is InstagramTextDirective => item !== null)
+      : [],
+    visualAvoidItems: Array.isArray(raw.visualAvoidItems)
+      ? raw.visualAvoidItems.map(normalizeTextDirective).filter((item): item is InstagramTextDirective => item !== null)
+      : [],
+    carouselSimulation: Array.isArray(raw.carouselSimulation)
+      ? raw.carouselSimulation.map(normalizeCarouselPage).filter((item): item is InstagramCarouselPage => item !== null)
+      : [],
+    staticCardSimulation: normalizeSingleImageSimulation(raw.staticCardSimulation),
+    reelCoverSimulation: normalizeSingleImageSimulation(raw.reelCoverSimulation),
+    contentFronts: Array.isArray(raw.contentFronts)
+      ? raw.contentFronts.map(normalizeContentFront).filter((item): item is InstagramContentFront => item !== null)
+      : [],
+    conversionRoutes: Array.isArray(raw.conversionRoutes)
+      ? raw.conversionRoutes.map(normalizeConversionRoute).filter((item): item is InstagramConversionRoute => item !== null)
+      : [],
+    hashtagUsageGuidance: str(raw.hashtagUsageGuidance),
+    indicatorCategories: Array.isArray(raw.indicatorCategories)
+      ? raw.indicatorCategories.map(normalizeIndicatorCategory).filter((item): item is InstagramIndicatorCategory => item !== null)
       : [],
     ...(legacy ? { legacy } : {}),
   };
@@ -901,6 +1129,19 @@ function normalizeLegacy(raw: Record<string, unknown>): InstagramData {
     integration: emptyIntegration(),
     hashtags: normalizeLegacyHashtags(raw.hashtags),
     externalReferences: normalizeLegacyExternalReferences(raw.references),
+    priorityAudiences: [],
+    bioPaths: [],
+    pinnedPosts: Array.from({ length: 3 }, createEmptyInstagramPinnedPost),
+    visualGuideline: "",
+    visualElements: [],
+    visualAvoidItems: [],
+    carouselSimulation: [],
+    staticCardSimulation: createEmptyInstagramSingleImageSimulation(),
+    reelCoverSimulation: createEmptyInstagramSingleImageSimulation(),
+    contentFronts: [],
+    conversionRoutes: [],
+    hashtagUsageGuidance: "",
+    indicatorCategories: [],
     ...(legacy ? { legacy } : {}),
   };
 }
