@@ -5,7 +5,7 @@ import {
   SectionCard,
 } from "./ChannelPresentationShared";
 import { RichText } from "./RichText";
-import { normalizeContentFunnelThemeItems } from "@/lib/normalizeContentFunnelThemes";
+import { normalizeContentFunnelFormatItems } from "@/lib/normalizeContentFunnelThemes";
 
 function FieldBlock({ label, value }: { label: string; value: string }) {
   if (!value?.trim()) return null;
@@ -26,6 +26,7 @@ type ContentFunnelStageData = {
   themes: string;
   recommendedFormat: string;
   themeItems?: { theme: string; format: string }[];
+  formatItems?: { format: string }[];
   ctas: string;
 };
 
@@ -114,16 +115,16 @@ export default function FunilConteudoPresentation({ data }: { data: unknown }) {
 
       {stages.map((stage, i) => {
         const meta = stageTitles[i];
-        const themeItems = normalizeContentFunnelThemeItems(
+        const formatItems = normalizeContentFunnelFormatItems(
+          stage.formatItems,
           stage.themeItems,
-          stage.themes,
-          stage.recommendedFormat
+          stage.themes
         );
         const fieldsBeforeThemes = stageFields.filter(
           (field) => field.key !== "ctas" && stage[field.key]?.trim()
         );
         const ctas = stage.ctas?.trim() ?? "";
-        if (!fieldsBeforeThemes.length && !themeItems.length && !ctas) return null;
+        if (!fieldsBeforeThemes.length && !formatItems.length && !ctas) return null;
         return (
           <section
             key={i}
@@ -142,23 +143,19 @@ export default function FunilConteudoPresentation({ data }: { data: unknown }) {
               {fieldsBeforeThemes.map((f) => (
                 <FieldBlock key={f.key} label={f.label} value={stage[f.key]} />
               ))}
-              {themeItems.length > 0 && (
+              {formatItems.length > 0 && (
                 <div>
                   <p className="mb-3 mt-8 text-base font-semibold uppercase tracking-[0.22em] text-[#5f6f8a]">
-                    Exemplos de temas
+                    Exemplos de formatos
                   </p>
                   <div className="divide-y divide-slate-200 border-y border-slate-200">
-                    {themeItems.map((item, themeIndex) => (
+                    {formatItems.map((item, formatIndex) => (
                       <div
-                        key={themeIndex}
-                        className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                        key={formatIndex}
+                        className="flex gap-3 py-4"
                       >
-                        <p className="text-sm leading-7 text-slate-700">{item.theme}</p>
-                        {item.format && (
-                          <span className="w-fit shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
-                            {item.format}
-                          </span>
-                        )}
+                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
+                        <p className="text-sm leading-7 text-slate-700">{item.format}</p>
                       </div>
                     ))}
                   </div>

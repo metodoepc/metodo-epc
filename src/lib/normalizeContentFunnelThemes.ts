@@ -1,13 +1,25 @@
-export type ContentFunnelThemeItem = {
-  theme: string;
+export type ContentFunnelFormatItem = {
   format: string;
 };
 
-export function normalizeContentFunnelThemeItems(
+export function normalizeContentFunnelFormatItems(
+  formatItems: unknown,
   themeItems: unknown,
-  legacyThemes: unknown,
-  legacyFormat: unknown
-): ContentFunnelThemeItem[] {
+  legacyThemes: unknown
+): ContentFunnelFormatItem[] {
+  if (Array.isArray(formatItems)) {
+    return formatItems
+      .map((item) => {
+        if (!item || typeof item !== "object") return null;
+
+        const value = item as Record<string, unknown>;
+        const format = typeof value.format === "string" ? value.format.trim() : "";
+
+        return format ? { format } : null;
+      })
+      .filter((item): item is ContentFunnelFormatItem => item !== null);
+  }
+
   if (Array.isArray(themeItems)) {
     return themeItems
       .map((item) => {
@@ -15,20 +27,20 @@ export function normalizeContentFunnelThemeItems(
 
         const value = item as Record<string, unknown>;
         const theme = typeof value.theme === "string" ? value.theme.trim() : "";
-        const format = typeof value.format === "string" ? value.format : "";
+        const legacyItemFormat =
+          typeof value.format === "string" ? value.format.trim() : "";
+        const format = theme || legacyItemFormat;
 
-        return theme ? { theme, format } : null;
+        return format ? { format } : null;
       })
-      .filter((item): item is ContentFunnelThemeItem => item !== null);
+      .filter((item): item is ContentFunnelFormatItem => item !== null);
   }
 
   if (typeof legacyThemes !== "string" || !legacyThemes.trim()) return [];
-
-  const format = typeof legacyFormat === "string" ? legacyFormat : "";
 
   return legacyThemes
     .split(/\r?\n|,/)
     .map((theme) => theme.trim())
     .filter(Boolean)
-    .map((theme) => ({ theme, format }));
+    .map((format) => ({ format }));
 }

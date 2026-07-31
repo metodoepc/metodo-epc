@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import RichTextEditor from "@/Components/RichTextEditor";
-import type { ContentFunnelThemeItem } from "@/lib/normalizeContentFunnelThemes";
+import type { ContentFunnelFormatItem } from "@/lib/normalizeContentFunnelThemes";
 
 export type ContentFunnelStageData = {
   strategy: string;
@@ -11,7 +11,8 @@ export type ContentFunnelStageData = {
   nextStep: string;
   themes: string;
   recommendedFormat: string;
-  themeItems: ContentFunnelThemeItem[];
+  themeItems?: { theme: string; format: string }[];
+  formatItems: ContentFunnelFormatItem[];
   ctas: string;
 };
 
@@ -110,7 +111,7 @@ function createEmptyStage(): ContentFunnelStageData {
     nextStep: "",
     themes: "",
     recommendedFormat: contentTypes[0],
-    themeItems: [],
+    formatItems: [],
     ctas: "",
   };
 }
@@ -239,52 +240,48 @@ export default function FunilConteudoForm({
     }));
   }
 
-  function addTheme(stageIndex: number) {
+  function addFormat(stageIndex: number) {
     setData((current) => {
       const nextStages = [...current.stages];
       const stage = nextStages[stageIndex] || createEmptyStage();
 
       nextStages[stageIndex] = {
         ...stage,
-        themeItems: [
-          ...stage.themeItems,
-          { theme: "", format: contentTypes[0] },
-        ],
+        formatItems: [...stage.formatItems, { format: "" }],
       };
 
       return { ...current, stages: nextStages };
     });
   }
 
-  function updateTheme(
+  function updateFormat(
     stageIndex: number,
-    themeIndex: number,
-    key: keyof ContentFunnelThemeItem,
+    formatIndex: number,
     value: string
   ) {
     setData((current) => {
       const nextStages = [...current.stages];
       const stage = nextStages[stageIndex] || createEmptyStage();
-      const nextThemeItems = [...stage.themeItems];
+      const nextFormatItems = [...stage.formatItems];
 
-      nextThemeItems[themeIndex] = {
-        ...nextThemeItems[themeIndex],
-        [key]: value,
+      nextFormatItems[formatIndex] = {
+        ...nextFormatItems[formatIndex],
+        format: value,
       };
-      nextStages[stageIndex] = { ...stage, themeItems: nextThemeItems };
+      nextStages[stageIndex] = { ...stage, formatItems: nextFormatItems };
 
       return { ...current, stages: nextStages };
     });
   }
 
-  function removeTheme(stageIndex: number, themeIndex: number) {
+  function removeFormat(stageIndex: number, formatIndex: number) {
     setData((current) => {
       const nextStages = [...current.stages];
       const stage = nextStages[stageIndex] || createEmptyStage();
 
       nextStages[stageIndex] = {
         ...stage,
-        themeItems: stage.themeItems.filter((_, index) => index !== themeIndex),
+        formatItems: stage.formatItems.filter((_, index) => index !== formatIndex),
       };
 
       return { ...current, stages: nextStages };
@@ -404,53 +401,34 @@ export default function FunilConteudoForm({
 
             <div className="mt-5">
               <label className="mb-2 block text-sm font-semibold text-slate-600">
-                Exemplos de temas
+                Exemplos de formatos
               </label>
 
               <div className="space-y-3">
-                {stageData.themeItems.map((item, themeIndex) => (
+                {stageData.formatItems.map((item, formatIndex) => (
                   <div
-                    key={themeIndex}
-                    className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[minmax(0,1fr)_240px_auto]"
+                    key={formatIndex}
+                    className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[minmax(0,1fr)_auto]"
                   >
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-600">
-                        Tema
-                      </label>
-                      <input
-                        type="text"
-                        value={item.theme}
-                        onChange={(event) =>
-                          updateTheme(index, themeIndex, "theme", event.target.value)
-                        }
-                        placeholder="Digite um tema"
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                      />
-                    </div>
-
                     <div>
                       <label className="mb-2 block text-sm font-semibold text-slate-600">
                         Formato
                       </label>
-                      <select
+                      <input
+                        type="text"
                         value={item.format}
                         onChange={(event) =>
-                          updateTheme(index, themeIndex, "format", event.target.value)
+                          updateFormat(index, formatIndex, event.target.value)
                         }
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                      >
-                        {contentTypes.map((type) => (
-                          <option key={type} value={type}>
-                            {type}
-                          </option>
-                        ))}
-                      </select>
+                        placeholder="Ex: Reels curto com pergunta provocativa"
+                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                      />
                     </div>
 
                     <div className="flex items-end">
                       <button
                         type="button"
-                        onClick={() => removeTheme(index, themeIndex)}
+                        onClick={() => removeFormat(index, formatIndex)}
                         className="cursor-pointer rounded-full px-4 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-50"
                       >
                         Excluir
@@ -462,10 +440,10 @@ export default function FunilConteudoForm({
 
               <button
                 type="button"
-                onClick={() => addTheme(index)}
+                onClick={() => addFormat(index)}
                 className="mt-3 cursor-pointer rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
               >
-                Adicionar tema
+                Adicionar formato
               </button>
             </div>
 
