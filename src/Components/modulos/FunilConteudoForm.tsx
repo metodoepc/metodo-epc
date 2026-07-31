@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import RichTextEditor from "@/Components/RichTextEditor";
+import type { ContentFunnelThemeItem } from "@/lib/normalizeContentFunnelThemes";
 
 export type ContentFunnelStageData = {
   strategy: string;
@@ -10,6 +11,7 @@ export type ContentFunnelStageData = {
   nextStep: string;
   themes: string;
   recommendedFormat: string;
+  themeItems: ContentFunnelThemeItem[];
   ctas: string;
 };
 
@@ -108,6 +110,7 @@ function createEmptyStage(): ContentFunnelStageData {
     nextStep: "",
     themes: "",
     recommendedFormat: contentTypes[0],
+    themeItems: [],
     ctas: "",
   };
 }
@@ -236,6 +239,58 @@ export default function FunilConteudoForm({
     }));
   }
 
+  function addTheme(stageIndex: number) {
+    setData((current) => {
+      const nextStages = [...current.stages];
+      const stage = nextStages[stageIndex] || createEmptyStage();
+
+      nextStages[stageIndex] = {
+        ...stage,
+        themeItems: [
+          ...stage.themeItems,
+          { theme: "", format: contentTypes[0] },
+        ],
+      };
+
+      return { ...current, stages: nextStages };
+    });
+  }
+
+  function updateTheme(
+    stageIndex: number,
+    themeIndex: number,
+    key: keyof ContentFunnelThemeItem,
+    value: string
+  ) {
+    setData((current) => {
+      const nextStages = [...current.stages];
+      const stage = nextStages[stageIndex] || createEmptyStage();
+      const nextThemeItems = [...stage.themeItems];
+
+      nextThemeItems[themeIndex] = {
+        ...nextThemeItems[themeIndex],
+        [key]: value,
+      };
+      nextStages[stageIndex] = { ...stage, themeItems: nextThemeItems };
+
+      return { ...current, stages: nextStages };
+    });
+  }
+
+  function removeTheme(stageIndex: number, themeIndex: number) {
+    setData((current) => {
+      const nextStages = [...current.stages];
+      const stage = nextStages[stageIndex] || createEmptyStage();
+
+      nextStages[stageIndex] = {
+        ...stage,
+        themeItems: stage.themeItems.filter((_, index) => index !== themeIndex),
+      };
+
+      return { ...current, stages: nextStages };
+    });
+  }
+
   function updateMetric(key: keyof ContentFunnelData["metrics"], value: string) {
     setData((current) => ({
       ...current,
@@ -347,42 +402,71 @@ export default function FunilConteudoForm({
               />
             </div>
 
-            <div className="mt-5 grid gap-4 md:grid-cols-[1fr_240px]">
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-600">
-                  Exemplos de temas
-                </label>
+            <div className="mt-5">
+              <label className="mb-2 block text-sm font-semibold text-slate-600">
+                Exemplos de temas
+              </label>
 
-                <input
-                  type="text"
-                  value={stageData.themes}
-                  onChange={(event) =>
-                    updateStage(index, "themes", event.target.value)
-                  }
-                  placeholder="Ex: tema 1, tema 2, tema 3, tema 4..."
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                />
+              <div className="space-y-3">
+                {stageData.themeItems.map((item, themeIndex) => (
+                  <div
+                    key={themeIndex}
+                    className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[minmax(0,1fr)_240px_auto]"
+                  >
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-600">
+                        Tema
+                      </label>
+                      <input
+                        type="text"
+                        value={item.theme}
+                        onChange={(event) =>
+                          updateTheme(index, themeIndex, "theme", event.target.value)
+                        }
+                        placeholder="Digite um tema"
+                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-600">
+                        Formato
+                      </label>
+                      <select
+                        value={item.format}
+                        onChange={(event) =>
+                          updateTheme(index, themeIndex, "format", event.target.value)
+                        }
+                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                      >
+                        {contentTypes.map((type) => (
+                          <option key={type} value={type}>
+                            {type}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex items-end">
+                      <button
+                        type="button"
+                        onClick={() => removeTheme(index, themeIndex)}
+                        className="cursor-pointer rounded-full px-4 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-50"
+                      >
+                        Excluir
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-600">
-                  Formato recomendado
-                </label>
-
-                <select
-                  value={stageData.recommendedFormat}
-                  onChange={(event) =>
-                    updateStage(index, "recommendedFormat", event.target.value)
-                  }
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
-                >
-                  {contentTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <button
+                type="button"
+                onClick={() => addTheme(index)}
+                className="mt-3 cursor-pointer rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+              >
+                Adicionar tema
+              </button>
             </div>
 
             <div className="mt-5">

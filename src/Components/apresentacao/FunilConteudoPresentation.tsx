@@ -5,6 +5,7 @@ import {
   SectionCard,
 } from "./ChannelPresentationShared";
 import { RichText } from "./RichText";
+import { normalizeContentFunnelThemeItems } from "@/lib/normalizeContentFunnelThemes";
 
 function FieldBlock({ label, value }: { label: string; value: string }) {
   if (!value?.trim()) return null;
@@ -24,6 +25,7 @@ type ContentFunnelStageData = {
   nextStep: string;
   themes: string;
   recommendedFormat: string;
+  themeItems?: { theme: string; format: string }[];
   ctas: string;
 };
 
@@ -47,12 +49,16 @@ const stageTitles = [
   { acronym: "REFU", title: "Conteúdos de recompra", sub: "Cliente volta a comprar" },
 ];
 
-const stageFields: { key: keyof ContentFunnelStageData; label: string }[] = [
+type ContentFunnelTextFieldKey =
+  | "strategy"
+  | "objective"
+  | "nextStep"
+  | "ctas";
+
+const stageFields: { key: ContentFunnelTextFieldKey; label: string }[] = [
   { key: "strategy", label: "Estratégia" },
   { key: "objective", label: "Objetivo" },
   { key: "nextStep", label: "Próximo passo" },
-  { key: "themes", label: "Temas" },
-  { key: "recommendedFormat", label: "Formatos recomendados" },
   { key: "ctas", label: "CTAs" },
 ];
 
@@ -108,8 +114,16 @@ export default function FunilConteudoPresentation({ data }: { data: unknown }) {
 
       {stages.map((stage, i) => {
         const meta = stageTitles[i];
-        const filledFields = stageFields.filter((f) => stage[f.key]?.trim());
-        if (!filledFields.length) return null;
+        const themeItems = normalizeContentFunnelThemeItems(
+          stage.themeItems,
+          stage.themes,
+          stage.recommendedFormat
+        );
+        const fieldsBeforeThemes = stageFields.filter(
+          (field) => field.key !== "ctas" && stage[field.key]?.trim()
+        );
+        const ctas = stage.ctas?.trim() ?? "";
+        if (!fieldsBeforeThemes.length && !themeItems.length && !ctas) return null;
         return (
           <section
             key={i}
@@ -125,9 +139,32 @@ export default function FunilConteudoPresentation({ data }: { data: unknown }) {
               </div>
             </div>
             <div className="space-y-6">
-              {filledFields.map((f) => (
+              {fieldsBeforeThemes.map((f) => (
                 <FieldBlock key={f.key} label={f.label} value={stage[f.key]} />
               ))}
+              {themeItems.length > 0 && (
+                <div>
+                  <p className="mb-3 mt-8 text-base font-semibold uppercase tracking-[0.22em] text-[#5f6f8a]">
+                    Exemplos de temas
+                  </p>
+                  <div className="divide-y divide-slate-200 border-y border-slate-200">
+                    {themeItems.map((item, themeIndex) => (
+                      <div
+                        key={themeIndex}
+                        className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                      >
+                        <p className="text-sm leading-7 text-slate-700">{item.theme}</p>
+                        {item.format && (
+                          <span className="w-fit shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                            {item.format}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {ctas && <FieldBlock label="CTAs" value={ctas} />}
             </div>
           </section>
         );

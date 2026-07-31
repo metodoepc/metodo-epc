@@ -81,6 +81,7 @@ import FunilConteudoForm, {
   funnelStages,
   initialContentFunnelData,
 } from "@/Components/modulos/FunilConteudoForm";
+import { normalizeContentFunnelThemeItems } from "@/lib/normalizeContentFunnelThemes";
 
 import LinhasEditoriaisForm, {
   EditorialLinesData,
@@ -961,6 +962,11 @@ if (isContentFunnelModule && isContentFunnelData(savedContent)) {
             themes: savedContent.stages[index]?.themes || "",
             recommendedFormat:
               savedContent.stages[index]?.recommendedFormat || "Reels",
+            themeItems: normalizeContentFunnelThemeItems(
+              savedContent.stages[index]?.themeItems,
+              savedContent.stages[index]?.themes,
+              savedContent.stages[index]?.recommendedFormat || "Reels"
+            ),
             ctas: savedContent.stages[index]?.ctas || "",
           }))
         : initialContentFunnelData.stages,
