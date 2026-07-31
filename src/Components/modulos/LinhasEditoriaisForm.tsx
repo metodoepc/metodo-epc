@@ -232,7 +232,34 @@ const editorialLineTypes = [
 
 const editorialPriorities = ["Principal", "Complementar", "Pontual"];
 const frequencyPeriods = ["por dia", "por semana", "por quinzena", "por mês", "por trimestre"];
-const channelOptions = initialChannels.map((channel) => channel.nome);
+const contentChannelOptions = [
+  "Instagram Feed",
+  "Instagram Stories",
+  "Facebook",
+  "LinkedIn",
+  "Newsletter do LinkedIn",
+  "TikTok",
+  "YouTube",
+  "YouTube Shorts",
+  "Blog",
+  "E-mail / Newsletter",
+  "WhatsApp",
+  "Pinterest",
+  "Podcast",
+  "Lives",
+  "Site",
+  "Lista de cadastro",
+];
+const channelOptions = [
+  ...contentChannelOptions,
+  ...initialChannels
+    .map((channel) => channel.nome)
+    .filter((channel) => channel !== "Instagram" && !contentChannelOptions.includes(channel)),
+];
+const getChannelIdentity = (channel: string) =>
+  channel === "Instagram" ? "Instagram Feed" : channel;
+const getChannelLabel = (channel: string) =>
+  channel === "Instagram" ? "Instagram Feed" : channel;
 const journeyRoleOptions = journeyStages.map((stage) => stage.title);
 
 type LinhasEditoriaisFormProps = {
@@ -532,9 +559,9 @@ export default function LinhasEditoriaisForm({
                               className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
                             >
                               <option value="">Selecione o canal</option>
-                              {frequency.channel && !channelOptions.includes(frequency.channel) && <option value={frequency.channel}>{frequency.channel}</option>}
-                              {channelOptions.map((channel) => (
-                                <option key={channel} value={channel} disabled={line.channelFrequencies.some((item, itemIndex) => itemIndex !== frequencyIndex && item.channel === channel)}>{channel}</option>
+                              {frequency.channel && !channelOptions.includes(frequency.channel) && <option value={frequency.channel}>{getChannelLabel(frequency.channel)}</option>}
+                              {channelOptions.filter((channel) => !(frequency.channel === "Instagram" && channel === "Instagram Feed")).map((channel) => (
+                                <option key={channel} value={channel} disabled={line.channelFrequencies.some((item, itemIndex) => itemIndex !== frequencyIndex && getChannelIdentity(item.channel) === getChannelIdentity(channel))}>{channel}</option>
                               ))}
                             </select>
                           </div>
