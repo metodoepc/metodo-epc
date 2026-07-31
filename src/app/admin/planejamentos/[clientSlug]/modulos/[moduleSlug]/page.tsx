@@ -87,6 +87,10 @@ import LinhasEditoriaisForm, {
   EditorialLinesData,
   initialEditorialLinesData,
 } from "@/Components/modulos/LinhasEditoriaisForm";
+import {
+  normalizeEditorialChannelFrequencies,
+  normalizeEditorialTextList,
+} from "@/lib/normalizeEditorialLineData";
 
 import InstagramForm from "@/Components/modulos/InstagramForm";
 import type { InstagramData } from "@/types/instagram";
@@ -1010,6 +1014,17 @@ if (isEditorialLinesModule && isEditorialLinesData(savedContent)) {
             frequency: line.frequency || "",
             examples: line.examples || "",
             notes: line.notes || "",
+            lineType: line.lineType || "",
+            priority: line.priority || "",
+            channelFrequencies: normalizeEditorialChannelFrequencies(line.channelFrequencies),
+            priorityPersonas: normalizeEditorialTextList(line.priorityPersonas, ""),
+            journeyRoles: normalizeEditorialTextList(line.journeyRoles, ""),
+            mainPillars: normalizeEditorialTextList(line.mainPillars, line.contentPillars),
+            priorityFormats: normalizeEditorialTextList(line.priorityFormats, line.formats),
+            contentExamples: normalizeEditorialTextList(line.contentExamples, line.examples),
+            relatedOffers: normalizeEditorialTextList(line.relatedOffers, ""),
+            conductionMoment: line.conductionMoment || "",
+            primaryIndicators: normalizeEditorialTextList(line.primaryIndicators, ""),
           }))
         : initialEditorialLinesData.lines,
     generalGuidelines: savedContent.generalGuidelines || "",
