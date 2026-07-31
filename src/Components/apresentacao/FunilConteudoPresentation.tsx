@@ -11,7 +11,7 @@ function FieldBlock({ label, value }: { label: string; value: string }) {
   if (!value?.trim()) return null;
   return (
     <div>
-      <p className="mb-3 mt-8 text-base font-semibold uppercase tracking-[0.22em] text-[#5f6f8a]">
+      <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
         {label}
       </p>
       <RichText content={value} className="text-sm leading-7 text-slate-700" />
@@ -50,26 +50,48 @@ const stageTitles = [
   { acronym: "REFU", title: "Conteúdos de recompra", sub: "Cliente volta a comprar" },
 ];
 
-type ContentFunnelTextFieldKey =
-  | "strategy"
-  | "objective"
-  | "nextStep"
-  | "ctas";
-
-const stageFields: { key: ContentFunnelTextFieldKey; label: string }[] = [
-  { key: "strategy", label: "Estratégia" },
-  { key: "objective", label: "Objetivo" },
-  { key: "nextStep", label: "Próximo passo" },
-  { key: "ctas", label: "CTAs" },
+const stageVisuals = [
+  {
+    badge: "bg-sky-50 text-sky-700 ring-sky-200",
+    border: "border-t-sky-400",
+    bar: "bg-sky-400",
+    dot: "bg-sky-500",
+  },
+  {
+    badge: "bg-indigo-50 text-indigo-700 ring-indigo-200",
+    border: "border-t-indigo-400",
+    bar: "bg-indigo-400",
+    dot: "bg-indigo-500",
+  },
+  {
+    badge: "bg-violet-50 text-violet-700 ring-violet-200",
+    border: "border-t-violet-400",
+    bar: "bg-violet-400",
+    dot: "bg-violet-500",
+  },
+  {
+    badge: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+    border: "border-t-emerald-400",
+    bar: "bg-emerald-400",
+    dot: "bg-emerald-500",
+  },
+  {
+    badge: "bg-amber-50 text-amber-700 ring-amber-200",
+    border: "border-t-amber-400",
+    bar: "bg-amber-400",
+    dot: "bg-amber-500",
+  },
 ];
 
-const funnelColors = [
-  "bg-blue-50 ring-blue-200 text-blue-700",
-  "bg-violet-50 ring-violet-200 text-violet-700",
-  "bg-slate-50 ring-slate-200 text-slate-600",
-  "bg-emerald-50 ring-emerald-200 text-emerald-700",
-  "bg-slate-50 ring-slate-200 text-slate-700",
-];
+function getDistributionPercentage(value: string): number {
+  const text = value.replace(/<[^>]*>/g, "").replace(",", ".");
+  const match = text.match(/-?\d+(?:\.\d+)?/);
+  if (!match) return 0;
+
+  const percentage = Number(match[0]);
+  if (!Number.isFinite(percentage)) return 0;
+  return Math.min(100, Math.max(0, percentage));
+}
 
 export default function FunilConteudoPresentation({ data }: { data: unknown }) {
   const d = isFunnelData(data) ? data : null;
@@ -81,21 +103,21 @@ export default function FunilConteudoPresentation({ data }: { data: unknown }) {
 
   const distItems = dist
     ? [
-        { label: "Atração", value: dist.attraction },
-        { label: "Conexão", value: dist.connection },
-        { label: "Vinculação", value: dist.bonding },
-        { label: "Conversão", value: dist.sales },
-        { label: "Recompra", value: dist.repurchase ?? "" },
+        { label: "Atração", acronym: "TOFU", value: dist.attraction, stageIndex: 0 },
+        { label: "Conexão", acronym: "MOFU", value: dist.connection, stageIndex: 1 },
+        { label: "Vinculação", acronym: "FOFU", value: dist.bonding, stageIndex: 2 },
+        { label: "Conversão", acronym: "COFU", value: dist.sales, stageIndex: 3 },
+        { label: "Recompra", acronym: "REFU", value: dist.repurchase ?? "", stageIndex: 4 },
       ].filter((i) => i.value?.trim())
     : [];
 
   const metricsItems = metrics
     ? [
-        { label: "Atração", value: metrics.attraction },
-        { label: "Conexão", value: metrics.connection },
-        { label: "Vinculação", value: metrics.bonding },
-        { label: "Conversão", value: metrics.sales },
-        { label: "Recompra", value: metrics.repurchase ?? "" },
+        { label: "Atração", acronym: "TOFU", value: metrics.attraction, stageIndex: 0 },
+        { label: "Conexão", acronym: "MOFU", value: metrics.connection, stageIndex: 1 },
+        { label: "Vinculação", acronym: "FOFU", value: metrics.bonding, stageIndex: 2 },
+        { label: "Conversão", acronym: "COFU", value: metrics.sales, stageIndex: 3 },
+        { label: "Recompra", acronym: "REFU", value: metrics.repurchase ?? "", stageIndex: 4 },
       ].filter((i) => i.value?.trim())
     : [];
 
@@ -109,7 +131,15 @@ export default function FunilConteudoPresentation({ data }: { data: unknown }) {
 
       {overview && (
         <section className="p-8 lg:p-12">
-          <FieldBlock label="Visão geral" value={overview} />
+          <div className="border-l-2 border-slate-300 pl-5 sm:pl-7">
+            <h2 className="font-serif text-xl font-semibold text-slate-950 sm:text-2xl">
+              Visão geral
+            </h2>
+            <RichText
+              content={overview}
+              className="mt-4 max-w-4xl text-sm leading-7 text-slate-700 sm:text-base sm:leading-8"
+            />
+          </div>
         </section>
       )}
 
@@ -120,48 +150,87 @@ export default function FunilConteudoPresentation({ data }: { data: unknown }) {
           stage.themeItems,
           stage.themes
         );
-        const fieldsBeforeThemes = stageFields.filter(
-          (field) => field.key !== "ctas" && stage[field.key]?.trim()
-        );
-        const ctas = stage.ctas?.trim() ?? "";
-        if (!fieldsBeforeThemes.length && !formatItems.length && !ctas) return null;
+        const strategy = stage.strategy ?? "";
+        const objective = stage.objective ?? "";
+        const nextStep = stage.nextStep ?? "";
+        const ctas = stage.ctas ?? "";
+        const hasStrategy = Boolean(strategy.trim());
+        const hasObjective = Boolean(objective.trim());
+        const hasNextStep = Boolean(nextStep.trim());
+        const hasCtas = Boolean(ctas.trim());
+        if (!hasStrategy && !hasObjective && !hasNextStep && !formatItems.length && !hasCtas) return null;
+        const visual = stageVisuals[i] ?? stageVisuals[0];
         return (
-          <section
-            key={i}
-            className="p-8 lg:p-12"
-          >
-            <div className={`mb-6 inline-flex rounded-2xl px-4 py-2 ring-1 ${funnelColors[i] ?? "bg-slate-50 ring-slate-200 text-slate-700"}`}>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em]">
-                  Etapa {i + 1}{meta?.acronym ? ` · ${meta.acronym}` : ""}
-                </p>
-                <p className="text-sm font-semibold">{meta?.title ?? `Etapa ${i + 1}`}</p>
-                {meta?.sub && <p className="text-xs opacity-70">{meta.sub}</p>}
-              </div>
-            </div>
-            <div className="space-y-6">
-              {fieldsBeforeThemes.map((f) => (
-                <FieldBlock key={f.key} label={f.label} value={stage[f.key]} />
-              ))}
-              {formatItems.length > 0 && (
-                <div>
-                  <p className="mb-3 mt-8 text-base font-semibold uppercase tracking-[0.22em] text-[#5f6f8a]">
-                    Exemplos de formatos
-                  </p>
-                  <div className="divide-y divide-slate-200 border-y border-slate-200">
-                    {formatItems.map((item, formatIndex) => (
-                      <div
-                        key={formatIndex}
-                        className="flex gap-3 py-4"
-                      >
-                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
-                        <p className="text-sm leading-7 text-slate-700">{item.format}</p>
-                      </div>
-                    ))}
+          <section key={i} className="p-6 sm:p-8 lg:p-12">
+            <div className={`overflow-hidden rounded-3xl border border-slate-200 border-t-2 bg-white ${visual.border}`}>
+              <div className="p-6 sm:p-8">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] ring-1 ${visual.badge}`}>
+                      Etapa {i + 1}{meta?.acronym ? ` · ${meta.acronym}` : ""}
+                    </span>
+                    <h2 className="mt-4 font-serif text-2xl font-semibold text-slate-950 sm:text-3xl">
+                      {meta?.title ?? `Etapa ${i + 1}`}
+                    </h2>
+                    {meta?.sub && (
+                      <p className="mt-2 text-sm font-medium text-slate-500">{meta.sub}</p>
+                    )}
                   </div>
+                  <span className="font-serif text-4xl text-slate-200" aria-hidden="true">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
                 </div>
-              )}
-              {ctas && <FieldBlock label="CTAs" value={ctas} />}
+
+                <div className="mt-8 space-y-8">
+                  {hasStrategy && (
+                    <div className="max-w-4xl">
+                      <FieldBlock label="Estratégia" value={strategy} />
+                    </div>
+                  )}
+
+                  {(hasObjective || hasNextStep) && (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {hasObjective && (
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
+                          <FieldBlock label="Objetivo" value={objective} />
+                        </div>
+                      )}
+                      {hasNextStep && (
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
+                          <FieldBlock label="Próximo passo" value={nextStep} />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {formatItems.length > 0 && (
+                    <div>
+                      <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        Exemplos de formatos
+                      </p>
+                      <div className="divide-y divide-slate-200 border-y border-slate-200">
+                        {formatItems.map((item, formatIndex) => (
+                          <div key={formatIndex} className="flex gap-3 py-4">
+                            <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${visual.dot}`} />
+                            <p className="text-sm leading-7 text-slate-700">{item.format}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {hasCtas && (
+                    <div className="border-t border-slate-200 pt-6">
+                      <div className="flex gap-3">
+                        <span className="mt-0.5 text-base text-slate-400" aria-hidden="true">→</span>
+                        <div className="min-w-0 flex-1">
+                          <FieldBlock label="CTAs" value={ctas} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </section>
         );
@@ -169,37 +238,85 @@ export default function FunilConteudoPresentation({ data }: { data: unknown }) {
 
       {(distItems.length > 0 || metricsItems.length > 0) && (
         <SectionCard title="Distribuição e métricas">
-          {distItems.length > 0 && (
-            <div>
-              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                Distribuição por etapa
-              </p>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {distItems.map((item, i) => (
-                  <div key={i} className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-                    <p className="mb-1 text-xs font-bold text-slate-500">{item.label}</p>
-                    <RichText content={item.value} className="text-sm text-slate-700" />
+          <div className="space-y-12">
+            {distItems.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  Distribuição por etapa
+                </p>
+
+                <div className="mt-5 h-4 w-full overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200">
+                  <div className="flex h-full w-full">
+                    {distItems.map((item) => (
+                      <div
+                        key={item.label}
+                        className={stageVisuals[item.stageIndex].bar}
+                        style={{ flexBasis: `${getDistributionPercentage(item.value)}%` }}
+                        title={`${item.label}: ${item.value}`}
+                      />
+                    ))}
                   </div>
-                ))}
+                </div>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                  {distItems.map((item) => (
+                    <div key={item.label} className="flex items-center gap-2">
+                      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${stageVisuals[item.stageIndex].dot}`} />
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-slate-700">
+                          {item.label} · {item.acronym}
+                        </p>
+                        <RichText content={item.value} className="text-xs text-slate-500" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-8 space-y-5">
+                  {distItems.map((item) => (
+                    <div key={item.label}>
+                      <div className="mb-2 flex items-center justify-between gap-4">
+                        <p className="text-sm font-semibold text-slate-700">{item.label}</p>
+                        <RichText content={item.value} className="text-sm font-semibold text-slate-600" />
+                      </div>
+                      <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className={`h-full rounded-full ${stageVisuals[item.stageIndex].bar}`}
+                          style={{ width: `${getDistributionPercentage(item.value)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-          {metricsItems.length > 0 && (
-            <div>
-              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                Métricas por etapa
-              </p>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {metricsItems.map((item, i) => (
-                  <div key={i} className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-                    <p className="mb-1 text-xs font-bold text-slate-500">{item.label}</p>
-                    <RichText content={item.value} className="text-sm text-slate-700" />
-                  </div>
-                ))}
+            )}
+
+            {metricsItems.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  Métricas do funil
+                </p>
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  {metricsItems.map((item, index) => (
+                    <div
+                      key={item.label}
+                      className={`rounded-2xl border border-slate-200 bg-white p-5 ${metricsItems.length % 2 === 1 && index === metricsItems.length - 1 ? "md:col-span-2" : ""}`}
+                    >
+                      <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] ring-1 ${stageVisuals[item.stageIndex].badge}`}>
+                        {item.acronym}
+                      </span>
+                      <h3 className="mt-3 font-serif text-lg font-semibold text-slate-950">
+                        {item.label}
+                      </h3>
+                      <RichText content={item.value} className="mt-3 text-sm leading-7 text-slate-700" />
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-          <ExternalRefList refs={references} />
+            )}
+
+            <ExternalRefList refs={references} />
+          </div>
         </SectionCard>
       )}
 
