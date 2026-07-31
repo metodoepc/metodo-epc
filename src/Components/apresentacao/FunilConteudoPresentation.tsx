@@ -30,8 +30,8 @@ type ContentFunnelStageData = {
 type ContentFunnelData = {
   stages: ContentFunnelStageData[];
   overview: string;
-  distribution: { attraction: string; connection: string; bonding: string; sales: string };
-  metrics: { attraction: string; connection: string; bonding: string; sales: string };
+  distribution: { attraction: string; connection: string; bonding: string; sales: string; repurchase?: string };
+  metrics: { attraction: string; connection: string; bonding: string; sales: string; repurchase?: string };
   references: { title: string; link: string }[];
 };
 
@@ -40,10 +40,11 @@ function isFunnelData(v: unknown): v is ContentFunnelData {
 }
 
 const stageTitles = [
-  { title: "Conteúdos de atração", sub: "Usuário vira seguidor" },
-  { title: "Conteúdos de conexão", sub: "Seguidor vira fã" },
-  { title: "Conteúdos de vinculação", sub: "Fã vira lead" },
-  { title: "Conteúdos de venda", sub: "Lead vira cliente" },
+  { acronym: "TOFU", title: "Conteúdos de atração", sub: "Usuário vira seguidor" },
+  { acronym: "MOFU", title: "Conteúdos de conexão", sub: "Seguidor vira fã" },
+  { acronym: "FOFU", title: "Conteúdos de vinculação", sub: "Fã vira lead" },
+  { acronym: "COFU", title: "Conteúdos de conversão", sub: "Lead vira cliente" },
+  { acronym: "REFU", title: "Conteúdos de recompra", sub: "Cliente volta a comprar" },
 ];
 
 const stageFields: { key: keyof ContentFunnelStageData; label: string }[] = [
@@ -60,6 +61,7 @@ const funnelColors = [
   "bg-violet-50 ring-violet-200 text-violet-700",
   "bg-slate-50 ring-slate-200 text-slate-600",
   "bg-emerald-50 ring-emerald-200 text-emerald-700",
+  "bg-slate-50 ring-slate-200 text-slate-700",
 ];
 
 export default function FunilConteudoPresentation({ data }: { data: unknown }) {
@@ -75,7 +77,8 @@ export default function FunilConteudoPresentation({ data }: { data: unknown }) {
         { label: "Atração", value: dist.attraction },
         { label: "Conexão", value: dist.connection },
         { label: "Vinculação", value: dist.bonding },
-        { label: "Venda", value: dist.sales },
+        { label: "Conversão", value: dist.sales },
+        { label: "Recompra", value: dist.repurchase ?? "" },
       ].filter((i) => i.value?.trim())
     : [];
 
@@ -84,7 +87,8 @@ export default function FunilConteudoPresentation({ data }: { data: unknown }) {
         { label: "Atração", value: metrics.attraction },
         { label: "Conexão", value: metrics.connection },
         { label: "Vinculação", value: metrics.bonding },
-        { label: "Venda", value: metrics.sales },
+        { label: "Conversão", value: metrics.sales },
+        { label: "Recompra", value: metrics.repurchase ?? "" },
       ].filter((i) => i.value?.trim())
     : [];
 
@@ -113,7 +117,10 @@ export default function FunilConteudoPresentation({ data }: { data: unknown }) {
           >
             <div className={`mb-6 inline-flex rounded-2xl px-4 py-2 ring-1 ${funnelColors[i] ?? "bg-slate-50 ring-slate-200 text-slate-700"}`}>
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em]">{meta?.title ?? `Etapa ${i + 1}`}</p>
+                <p className="text-xs font-bold uppercase tracking-[0.18em]">
+                  Etapa {i + 1}{meta?.acronym ? ` · ${meta.acronym}` : ""}
+                </p>
+                <p className="text-sm font-semibold">{meta?.title ?? `Etapa ${i + 1}`}</p>
                 {meta?.sub && <p className="text-xs opacity-70">{meta.sub}</p>}
               </div>
             </div>

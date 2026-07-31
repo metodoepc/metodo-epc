@@ -970,12 +970,14 @@ if (isContentFunnelModule && isContentFunnelData(savedContent)) {
       connection: savedContent.distribution?.connection || "",
       bonding: savedContent.distribution?.bonding || "",
       sales: savedContent.distribution?.sales || "",
+      repurchase: savedContent.distribution?.repurchase || "",
     },
     metrics: {
       attraction: savedContent.metrics?.attraction || "",
       connection: savedContent.metrics?.connection || "",
       bonding: savedContent.metrics?.bonding || "",
       sales: savedContent.metrics?.sales || "",
+      repurchase: savedContent.metrics?.repurchase || "",
     },
     references:
       Array.isArray(savedContent.references) && savedContent.references.length

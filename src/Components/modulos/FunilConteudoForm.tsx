@@ -26,18 +26,21 @@ export type ContentFunnelData = {
     connection: string;
     bonding: string;
     sales: string;
+    repurchase: string;
   };
   metrics: {
     attraction: string;
     connection: string;
     bonding: string;
     sales: string;
+    repurchase: string;
   };
   references: ContentFunnelReference[];
 };
 
 export const funnelStages = [
   {
+    acronym: "TOFU",
     title: "Conteúdos de atração",
     subtitle: "Usuário vira seguidor",
     description:
@@ -46,6 +49,7 @@ export const funnelStages = [
       "Ex: Conteúdos educativos simples, bastidores leves, tendências, temas populares, dúvidas comuns, erros frequentes, mitos, listas, curiosidades e conteúdos de descoberta.",
   },
   {
+    acronym: "MOFU",
     title: "Conteúdos de conexão",
     subtitle: "Seguidor vira fã",
     description:
@@ -54,6 +58,7 @@ export const funnelStages = [
       "Ex: História, bastidores, posicionamentos, crenças, valores, vulnerabilidades, rotina, causas, opiniões, experiências pessoais e visão de mundo.",
   },
   {
+    acronym: "FOFU",
     title: "Conteúdos de vinculação",
     subtitle: "Fã vira lead",
     description:
@@ -62,12 +67,22 @@ export const funnelStages = [
       "Ex: Conteúdos com convite para material gratuito, diagnóstico, checklist, aula, formulário, grupo, newsletter, WhatsApp, evento, comunidade ou conversa inicial.",
   },
   {
-    title: "Conteúdos de venda",
+    acronym: "COFU",
+    title: "Conteúdos de conversão",
     subtitle: "Lead vira cliente",
     description:
       "Defina conteúdos que conduzem o lead para a decisão de compra, quebram objeções, apresentam provas, reforçam valor e direcionam para uma oferta.",
     placeholder:
       "Ex: Depoimentos, estudos de caso, antes e depois, provas sociais, comparação, demonstração, bastidores da entrega, oferta, bônus, garantia, urgência e chamada para ação.",
+  },
+  {
+    acronym: "REFU",
+    title: "Conteúdos de recompra",
+    subtitle: "Cliente volta a comprar",
+    description:
+      "Defina conteúdos que mantêm o relacionamento após a compra, reforçam a experiência, estimulam novas necessidades e conduzem o cliente para uma nova compra.",
+    placeholder:
+      "Ex: Novidades, atualizações, conteúdos de uso, resultados de clientes, ofertas complementares, lançamentos, benefícios exclusivos, renovação e chamada para recompra.",
   },
 ];
 
@@ -105,12 +120,14 @@ export const initialContentFunnelData: ContentFunnelData = {
     connection: "",
     bonding: "",
     sales: "",
+    repurchase: "",
   },
   metrics: {
     attraction: "",
     connection: "",
     bonding: "",
     sales: "",
+    repurchase: "",
   },
   references: [
     {
@@ -286,7 +303,7 @@ export default function FunilConteudoForm({
           <SectionCard key={stage.title} title={`Etapa ${index + 1}`}>
             <div>
               <p className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-                Etapa {index + 1}
+                {stage.acronym}
               </p>
 
               <h2 className="mt-1 text-2xl font-bold text-slate-950">
@@ -383,14 +400,14 @@ export default function FunilConteudoForm({
 
       <SectionCard
         title="Visão geral do funil"
-        description="Explique como as quatro etapas se conectam e como o conteúdo deve conduzir o público de uma fase para a próxima."
+        description="Explique como as cinco etapas se conectam e como o conteúdo deve conduzir o público de uma fase para a próxima."
       >
         <RichTextEditor
           value={data.overview}
           onChange={(value) =>
             setData((current) => ({ ...current, overview: value }))
           }
-          placeholder="Ex: Primeiro os conteúdos de atração ampliam o alcance. Depois os conteúdos de conexão geram identificação. Em seguida, os conteúdos de vinculação levam o público para uma lista, conversa ou material. Por fim, os conteúdos de venda apresentam prova, oferta e chamada para decisão."
+          placeholder="Ex: Primeiro os conteúdos de atração ampliam o alcance. Depois os conteúdos de conexão geram identificação. Em seguida, os conteúdos de vinculação levam o público para uma lista, conversa ou material. Os conteúdos de conversão apresentam prova, oferta e chamada para decisão. Por fim, os conteúdos de recompra mantêm o relacionamento e estimulam uma nova compra."
         />
       </SectionCard>
 
@@ -398,7 +415,7 @@ export default function FunilConteudoForm({
         title="Distribuição entre as etapas"
         description="Defina a proporção recomendada de conteúdos para cada etapa do funil."
       >
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-5">
           <div>
             <label className="mb-2 block text-sm font-semibold text-slate-600">
               Atração
@@ -449,7 +466,7 @@ export default function FunilConteudoForm({
 
           <div>
             <label className="mb-2 block text-sm font-semibold text-slate-600">
-              Venda
+              Conversão
             </label>
 
             <input
@@ -457,6 +474,22 @@ export default function FunilConteudoForm({
               value={data.distribution.sales}
               onChange={(event) =>
                 updateDistribution("sales", event.target.value)
+              }
+              placeholder="Ex: 10%"
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-slate-600">
+              Recompra
+            </label>
+
+            <input
+              type="text"
+              value={data.distribution.repurchase}
+              onChange={(event) =>
+                updateDistribution("repurchase", event.target.value)
               }
               placeholder="Ex: 10%"
               className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
@@ -492,10 +525,17 @@ export default function FunilConteudoForm({
           />
 
           <TextAreaInput
-            label="Venda"
+            label="Conversão"
             value={data.metrics.sales}
-            placeholder="Venda: reuniões, propostas, conversões, vendas, custo por compra, taxa de fechamento, receita..."
+            placeholder="Conversão: reuniões, propostas, conversões, vendas, custo por compra, taxa de fechamento, receita..."
             onChange={(value) => updateMetric("sales", value)}
+          />
+
+          <TextAreaInput
+            label="Recompra"
+            value={data.metrics.repurchase}
+            placeholder="Recompra: novas compras, renovações, recorrência, retenção, frequência de compra, receita por cliente..."
+            onChange={(value) => updateMetric("repurchase", value)}
           />
         </div>
       </SectionCard>
