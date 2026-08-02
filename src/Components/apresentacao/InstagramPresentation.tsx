@@ -1,956 +1,328 @@
-import {
-  normalizeInstagramData,
-  hasMeaningfulInstagramContent,
-} from "@/lib/normalizeInstagramData";
+"use client";
+
+import { useId, useState } from "react";
+import { normalizeInstagramData } from "@/lib/normalizeInstagramData";
 import { PresentationHeader } from "./PresentationHeader";
 import { RichText } from "./RichText";
 import { ModuleIcon } from "./ModuleIcon";
-import {
-  TextList,
-  FieldBlock,
-  SectionCard,
-  EmptyState,
-  TextItem,
-} from "./ChannelPresentationShared";
+import { SectionCard, EmptyState } from "./ChannelPresentationShared";
 
-type InstagramPresentationProps = {
-  data: unknown;
-};
+type InstagramPresentationProps = { data: unknown };
 
-// ─── Local helpers ────────────────────────────────────────────────────────────
-
-/** True only when value is a non-empty string after trim. Does not strip HTML. */
-function hasText(value: unknown): boolean {
+function hasText(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-/** Returns only the strings in arr that pass hasText; preserves order. */
-function filterFilledStrings(arr: string[]): string[] {
-  return arr.filter((s) => hasText(s));
+function validPercentage(value: string): number | null {
+  if (!hasText(value)) return null;
+  const number = Number(value.replace(",", "."));
+  return Number.isFinite(number) && number >= 0 ? number : null;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+function isSafeLink(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 
-function PlainTextField({ label, value }: { label: string; value: string }) {
-  if (!hasText(value)) return null;
+const segmentColors = [
+  "bg-slate-900",
+  "bg-slate-600",
+  "bg-slate-400",
+  "bg-slate-300",
+  "bg-slate-500",
+];
+
+function PercentageDistribution({
+  items,
+}: {
+  items: Array<{ id: string; name: string; percentage: string }>;
+}) {
+  const segments = items
+    .map((item, index) => ({ ...item, number: validPercentage(item.percentage), index }))
+    .filter((item) => item.number !== null && item.number > 0);
+
+  if (segments.length === 0) return null;
+
+  return (
+    <div className="space-y-3" aria-label="Distribuição percentual">
+      <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+        {segments.map((item) => (
+          <span
+            key={item.id}
+            className={segmentColors[item.index % segmentColors.length]}
+            style={{ width: `${Math.min(item.number ?? 0, 100)}%` }}
+            title={`${item.name || "Item"}: ${item.percentage}%`}
+          />
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-500">
+        {segments.map((item) => (
+          <span key={item.id} className="flex items-center gap-2">
+            <span className={`h-2 w-2 rounded-full ${segmentColors[item.index % segmentColors.length]}`} />
+            {item.name || "Item"} · {item.percentage}%
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+type SimulationTab = "carousel" | "card" | "reel";
+
+function VisualSimulations({
+  carousel,
+  card,
+  reel,
+}: {
+  carousel: Array<{ id: string; imageUrl: string; pageType: string; title: string; order: number }>;
+  card: { imageUrl: string; title: string; description: string };
+  reel: { imageUrl: string; title: string; description: string };
+}) {
+  const tabsId = useId();
+  const sortedCarousel = [...carousel]
+    .sort((a, b) => a.order - b.order)
+    .filter((item) => hasText(item.imageUrl) || hasText(item.title) || hasText(item.pageType));
+  const hasCard = hasText(card.imageUrl) || hasText(card.title) || hasText(card.description);
+  const hasReel = hasText(reel.imageUrl) || hasText(reel.title) || hasText(reel.description);
+  const available: Array<{ id: SimulationTab; label: string }> = [
+    ...(sortedCarousel.length > 0 ? [{ id: "carousel" as const, label: "Carrossel" }] : []),
+    ...(hasCard ? [{ id: "card" as const, label: "Card" }] : []),
+    ...(hasReel ? [{ id: "reel" as const, label: "Reel" }] : []),
+  ];
+  const [selected, setSelected] = useState<SimulationTab>(available[0]?.id ?? "carousel");
+  const active = available.some((tab) => tab.id === selected) ? selected : available[0]?.id;
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const activePage = sortedCarousel[Math.min(carouselIndex, Math.max(sortedCarousel.length - 1, 0))];
+
+  if (!active) return null;
+
+  function moveTab(event: React.KeyboardEvent<HTMLButtonElement>, index: number) {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? available.length - 1
+        : (index + (event.key === "ArrowRight" ? 1 : -1) + available.length) % available.length;
+    const next = available[nextIndex];
+    setSelected(next.id);
+    document.getElementById(`${tabsId}-${next.id}-tab`)?.focus();
+  }
+
   return (
     <div>
-      <p className="text-base font-semibold text-slate-950">{label}</p>
-      <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">{value}</p>
+      <div role="tablist" aria-label="Formatos das simulações visuais" className="flex flex-wrap gap-2 border-b border-slate-200 pb-4">
+        {available.map((tab, index) => (
+          <button
+            key={tab.id}
+            id={`${tabsId}-${tab.id}-tab`}
+            type="button"
+            role="tab"
+            aria-selected={active === tab.id}
+            aria-controls={`${tabsId}-${tab.id}-panel`}
+            tabIndex={active === tab.id ? 0 : -1}
+            onClick={() => setSelected(tab.id)}
+            onKeyDown={(event) => moveTab(event, index)}
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 ${active === tab.id ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {active === "carousel" && activePage && (
+        <div id={`${tabsId}-carousel-panel`} role="tabpanel" aria-labelledby={`${tabsId}-carousel-tab`} className="pt-6">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_220px]">
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+              {hasText(activePage.imageUrl) && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={activePage.imageUrl} alt={activePage.title || `${activePage.pageType} do carrossel`} className="aspect-square w-full object-cover" />
+              )}
+              {(hasText(activePage.pageType) || hasText(activePage.title)) && (
+                <div className="p-5">
+                  {hasText(activePage.pageType) && <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{activePage.pageType}</p>}
+                  {hasText(activePage.title) && <p className="mt-2 font-serif text-xl font-semibold text-slate-950">{activePage.title}</p>}
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-3 gap-2 self-start sm:grid-cols-5 lg:grid-cols-2">
+              {sortedCarousel.map((page, index) => (
+                <button
+                  key={page.id}
+                  type="button"
+                  onClick={() => setCarouselIndex(index)}
+                  aria-label={`Ver página ${index + 1}: ${page.title || page.pageType}`}
+                  aria-pressed={index === carouselIndex}
+                  className={`overflow-hidden rounded-xl border bg-slate-50 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 ${index === carouselIndex ? "border-slate-900 ring-1 ring-slate-900" : "border-slate-200"}`}
+                >
+                  {hasText(page.imageUrl) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={page.imageUrl} alt="" className="aspect-square w-full object-cover" />
+                  ) : (
+                    <span className="flex aspect-square items-center justify-center p-2 text-center text-xs text-slate-500">{page.title || page.pageType}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {active === "card" && (
+        <SingleSimulation id={`${tabsId}-card-panel`} labelledBy={`${tabsId}-card-tab`} value={card} alt="Simulação de card estático" />
+      )}
+      {active === "reel" && (
+        <SingleSimulation id={`${tabsId}-reel-panel`} labelledBy={`${tabsId}-reel-tab`} value={reel} alt="Simulação de capa de Reel" portrait />
+      )}
+    </div>
+  );
+}
+
+function SingleSimulation({ id, labelledBy, value, alt, portrait = false }: {
+  id: string;
+  labelledBy: string;
+  value: { imageUrl: string; title: string; description: string };
+  alt: string;
+  portrait?: boolean;
+}) {
+  return (
+    <div id={id} role="tabpanel" aria-labelledby={labelledBy} className="pt-6">
+      <div className={`mx-auto overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 ${portrait ? "max-w-sm" : "max-w-2xl"}`}>
+        {hasText(value.imageUrl) && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={value.imageUrl} alt={value.title || alt} className={`${portrait ? "aspect-[4/5]" : "aspect-square"} w-full object-cover`} />
+        )}
+        {(hasText(value.title) || hasText(value.description)) && (
+          <div className="p-5 sm:p-6">
+            {hasText(value.title) && <h3 className="font-serif text-xl font-semibold text-slate-950">{value.title}</h3>}
+            {hasText(value.description) && <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600">{value.description}</p>}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 export default function InstagramPresentation({ data }: InstagramPresentationProps) {
-  // Server component — normalize once per render; no hooks needed.
   const d = normalizeInstagramData(data);
-
-  // ─── Frequência ─────────────────────────────────────────────────────────────
-  const visibleFreqItems = d.publishing.frequencyItems.filter(
-    (item) =>
-      hasText(item.format) ||
-      hasText(item.quantity) ||
-      hasText(item.period)
-  );
-
-  // ─── Objetivos ──────────────────────────────────────────────────────────────
-  const objectiveItems = d.objectives.filter(
-    (item) => hasText(item.objective)
-  );
-
-  // ─── Stories estratégicos ───────────────────────────────────────────────────
-  // name (v2) ← stories[].value (v1 legacy) via normalization
-  const strategicStories = d.contentArchitecture.stories.filter(
-    (item) =>
-      hasText(item.name) ||
-      hasText(item.frequency) ||
-      hasText(item.journeyStage) ||
-      hasText(item.cta)
-  );
-
-  // ─── Estruturas de linguagem ────────────────────────────────────────────────
-  // howItAppears (v2) ← languageStructures[].value (v1 legacy)
-  const languageStructureItems = d.languageStructures.filter(
-    (item) => hasText(item.name)
-  );
-
-  // ─── Hashtags ───────────────────────────────────────────────────────────────
-  // hashtags (v2) ← legacy hashtags grouped under single category via normalization
-  const hashtagCategories = d.hashtags.filter(
-    (cat) =>
-      hasText(cat.name) ||
-      hasText(cat.notes) ||
-      filterFilledStrings(cat.hashtags).length > 0
-  );
-  const hashtagItems: TextItem[] = hashtagCategories.flatMap((cat) =>
-    filterFilledStrings(cat.hashtags).map((hashtag) => ({ value: hashtag }))
-  );
-
-  // spread before sort to avoid mutating d.visualDirection.references
-  // url (v2) ← visualReferences[].image (v1 legacy)
-  const visualReferenceItems = [...d.visualDirection.references]
-    .sort((a, b) => a.order - b.order)
-    .filter(
-      (ref) => hasText(ref.url) || hasText(ref.title) || hasText(ref.description)
-    );
-
-  // ─── Indicadores e mensuração ───────────────────────────────────────────────
-  const primaryIndicators: TextItem[] = filterFilledStrings(
-    d.measurement.primaryIndicators
-  ).map((s) => ({ value: s }));
-  const secondaryIndicators: TextItem[] = filterFilledStrings(
-    d.measurement.secondaryIndicators
-  ).map((s) => ({ value: s }));
-  const vanityMetrics: TextItem[] = filterFilledStrings(d.measurement.vanityMetrics).map(
-    (s) => ({ value: s })
-  );
-  const measurementHypotheses: TextItem[] = filterFilledStrings(d.measurement.hypotheses).map(
-    (s) => ({ value: s })
-  );
-
-  // ─── Integração com outros canais ───────────────────────────────────────────
-  const receivesAudienceFrom: TextItem[] = filterFilledStrings(
-    d.integration.receivesAudienceFrom
-  ).map((s) => ({ value: s }));
-  const directsAudienceTo: TextItem[] = filterFilledStrings(
-    d.integration.directsAudienceTo
-  ).map((s) => ({ value: s }));
-  const connectionCtas: TextItem[] = filterFilledStrings(d.integration.connectionCtas).map(
-    (s) => ({ value: s })
-  );
-  // ─── Perfil ─────────────────────────────────────────────────────────────────
-  const profilePhotoUrl = d.profile.photoUrl;
-  const profileHandle = d.profile.handle;
-  const profileName = d.profile.displayName;
-  const profilePublicationCount = d.profile.publicationCount;
-  const profileFollowersCount = d.profile.followersCount;
-  const profileFollowingCount = d.profile.followingCount;
-  const profileCategory = d.profile.category;
-  const bioText = d.profile.bio;
-  const bioLink = d.profile.mainLink;
-  // highlights[].title (v2) ← highlights CSV string (v1 legacy); now structured
-  // spread before sort to avoid mutating d.profile.highlights
-  const profileHighlights = [...d.profile.highlights]
-    .sort((a, b) => a.order - b.order)
-    .filter((item) => hasText(item.title) || hasText(item.purpose) || hasText(item.imageUrl));
-
-  // ─── Referências externas ───────────────────────────────────────────────────
-  // url (v2) ← references[].link (v1 legacy)
-  const externalReferenceItems = d.externalReferences.filter(
-    (ref) =>
-      hasText(ref.imageUrl) ||
-      hasText(ref.title) ||
-      hasText(ref.url) ||
-      hasText(ref.notes)
-  );
-
-  // ─── Condições de seção ─────────────────────────────────────────────────────
-
-  const hasStrategicDirectionSection = hasText(
-    d.strategicDirection.channelRole
-  );
-
-  const hasFrequencySection = visibleFreqItems.length > 0;
-
-  const hasContentAndLanguageSection =
-    objectiveItems.length > 0 ||
-    strategicStories.length > 0 ||
-    languageStructureItems.length > 0 ||
-    hashtagItems.length > 0;
-
-  const hasVisualDirectionSection = visualReferenceItems.length > 0;
-
-  const hasDiscoveryConversion =
-    hasText(d.conversion.discovery.cta) ||
-    hasText(d.conversion.discovery.destination);
-
-  const hasConsiderationConversion =
-    hasText(d.conversion.consideration.cta) ||
-    hasText(d.conversion.consideration.destination);
-
-  const hasDecisionConversion =
-    hasText(d.conversion.decision.cta) ||
-    hasText(d.conversion.decision.destination);
-
+  const audiences = (d.priorityAudiences ?? []).filter((item) => hasText(item.name) || hasText(item.percentage) || hasText(item.description));
+  const objectives = d.objectives.filter((item) => hasText(item.objective));
+  const bioPaths = (d.bioPaths ?? []).filter((item) => hasText(item.name) || hasText(item.destination) || hasText(item.description));
+  const highlights = [...d.profile.highlights].sort((a, b) => a.order - b.order).filter((item) => hasText(item.title) || hasText(item.purpose) || hasText(item.imageUrl));
+  const pinnedPosts = (d.pinnedPosts ?? []).filter((item) => hasText(item.imageUrl) || hasText(item.title) || hasText(item.strategicRole));
+  const visualElements = (d.visualElements ?? []).filter((item) => hasText(item.value));
+  const visualAvoidItems = (d.visualAvoidItems ?? []).filter((item) => hasText(item.value));
+  const visualReferences = [...d.visualDirection.references].sort((a, b) => a.order - b.order).filter((item) => hasText(item.url) || hasText(item.title) || hasText(item.description));
+  const carousel = d.carouselSimulation ?? [];
+  const staticCard = d.staticCardSimulation ?? { imageUrl: "", title: "", description: "" };
+  const reelCover = d.reelCoverSimulation ?? { imageUrl: "", title: "", description: "" };
+  const contentFronts = (d.contentFronts ?? []).filter((item) => hasText(item.name) || hasText(item.percentage) || hasText(item.description));
+  const frequencies = d.publishing.frequencyItems.filter((item) => hasText(item.format) || hasText(item.quantity) || hasText(item.period));
   const conversionStages = [
-    {
-      name: "Descoberta",
-      description:
-        "Primeiro contato e progressão para um próximo conteúdo ou ponto de interesse.",
-      cta: d.conversion.discovery.cta,
-      destination: d.conversion.discovery.destination,
-      visible: hasDiscoveryConversion,
-    },
-    {
-      name: "Consideração",
-      description: "Aprofundamento do problema, da solução ou do método.",
-      cta: d.conversion.consideration.cta,
-      destination: d.conversion.consideration.destination,
-      visible: hasConsiderationConversion,
-    },
-    {
-      name: "Decisão",
-      description: "Encaminhamento para a ação comercial ou conversa qualificada.",
-      cta: d.conversion.decision.cta,
-      destination: d.conversion.decision.destination,
-      visible: hasDecisionConversion,
-    },
-  ].filter((stage) => stage.visible);
+    { name: "Descoberta", description: "Primeiro contato e progressão para um próximo conteúdo ou ponto de interesse.", ...d.conversion.discovery },
+    { name: "Consideração", description: "Aprofundamento do problema, da solução ou do método.", ...d.conversion.consideration },
+    { name: "Decisão", description: "Encaminhamento para a ação comercial ou conversa qualificada.", ...d.conversion.decision },
+  ].filter((item) => hasText(item.cta) || hasText(item.destination));
+  const conversionRoutes = (d.conversionRoutes ?? []).map((route) => ({ ...route, steps: route.steps.filter((step) => hasText(step.value)) })).filter((route) => hasText(route.name) || hasText(route.audience) || route.steps.length > 0);
+  const hashtagCategories = d.hashtags.map((category) => ({ ...category, hashtags: category.hashtags.filter(hasText) })).filter((category) => hasText(category.name) || category.hashtags.length > 0);
+  const receives = d.integration.receivesAudienceFrom.filter(hasText);
+  const directs = d.integration.directsAudienceTo.filter(hasText);
+  const connectionCtas = d.integration.connectionCtas.filter(hasText);
+  const indicators = (d.indicatorCategories ?? []).map((category) => ({ ...category, indicators: category.indicators.filter((item) => hasText(item.name)) })).filter((category) => hasText(category.name) || category.indicators.length > 0);
+  const externalReferences = d.externalReferences.filter((item) => hasText(item.imageUrl) || hasText(item.title) || hasText(item.url) || hasText(item.notes));
 
-  const hasConversionSection = conversionStages.length > 0;
-
-  const hasMeasurementSection =
-    primaryIndicators.length > 0 ||
-    secondaryIndicators.length > 0 ||
-    vanityMetrics.length > 0 ||
-    measurementHypotheses.length > 0 ||
-    hasText(d.measurement.weeklyReview) ||
-    hasText(d.measurement.monthlyReview) ||
-    hasText(d.measurement.keepCriterion) ||
-    hasText(d.measurement.adjustCriterion) ||
-    hasText(d.measurement.stopCriterion) ||
-    hasText(d.measurement.baseline);
-
-  const hasIntegrationSection =
-    receivesAudienceFrom.length > 0 ||
-    directsAudienceTo.length > 0 ||
-    connectionCtas.length > 0 ||
-    hasText(d.integration.ecosystemRole);
-
-  const hasExternalReferencesSection = externalReferenceItems.length > 0;
-
-  // profile.enabled intentionally not used — section shows based on content presence
-  const hasProfileSection =
-    hasText(profilePhotoUrl) ||
-    hasText(profileHandle) ||
-    hasText(profileName) ||
-    hasText(profilePublicationCount) ||
-    hasText(profileFollowersCount) ||
-    hasText(profileFollowingCount) ||
-    hasText(profileCategory) ||
-    hasText(bioText) ||
-    hasText(bioLink) ||
-    profileHighlights.length > 0;
-
-  const hasVisibleInstagramContent =
-    hasMeaningfulInstagramContent(d) ||
-    hasFrequencySection ||
-    hasContentAndLanguageSection ||
-    hasVisualDirectionSection ||
-    hasConversionSection ||
-    hasIntegrationSection ||
-    hasProfileSection ||
-    hasExternalReferencesSection;
-
-  // ─── Render ─────────────────────────────────────────────────────────────────
+  const hasProfile = [d.profile.photoUrl, d.profile.handle, d.profile.displayName, d.profile.publicationCount, d.profile.followersCount, d.profile.followingCount, d.profile.category, d.profile.bio, d.profile.mainLink].some(hasText);
+  const hasStrategy = hasText(d.strategicDirection.channelRole) || objectives.length > 0 || audiences.length > 0;
+  const hasProfileWorld = hasProfile || bioPaths.length > 0 || highlights.length > 0 || pinnedPosts.length > 0;
+  const hasVisual = hasText(d.visualGuideline) || visualElements.length > 0 || visualAvoidItems.length > 0 || visualReferences.length > 0;
+  const hasSimulations = carousel.some((item) => hasText(item.imageUrl) || hasText(item.title)) || [staticCard, reelCover].some((item) => hasText(item.imageUrl) || hasText(item.title) || hasText(item.description));
+  const hasConversion = conversionStages.length > 0 || conversionRoutes.length > 0;
+  const hasIntegration = receives.length > 0 || directs.length > 0 || connectionCtas.length > 0 || hasText(d.integration.ecosystemRole);
+  const hasAny = hasStrategy || hasProfileWorld || hasVisual || hasSimulations || contentFronts.length > 0 || frequencies.length > 0 || hasConversion || hashtagCategories.length > 0 || hasText(d.hashtagUsageGuidance) || hasIntegration || indicators.length > 0 || externalReferences.length > 0;
 
   return (
     <article className="divide-y divide-slate-100 overflow-hidden rounded-[2rem] bg-white shadow-sm ring-1 ring-slate-200">
-      <PresentationHeader
-        area="Estratégia Editorial e Distribuição de Conteúdo"
-        title="Instagram"
-        slug="instagram"
-      />
+      <PresentationHeader area="Estratégia Editorial e Distribuição de Conteúdo" title="Instagram" slug="instagram" />
 
-      {hasProfileSection && (
-        <SectionCard title="Apresentação visual do Instagram">
-          <div className="space-y-6">
-            {(hasText(profilePhotoUrl) ||
-              hasText(profileName) ||
-              hasText(profileHandle) ||
-              hasText(profilePublicationCount) ||
-              hasText(profileFollowersCount) ||
-              hasText(profileFollowingCount)) && (
-              <div className="flex items-start gap-5 sm:gap-8">
-                {hasText(profilePhotoUrl) && (
-                  // img used intentionally: photoUrl may be a base64 data URL (legacy) or HTTPS URL
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={profilePhotoUrl}
-                    alt={hasText(profileName) ? profileName : "Foto do perfil do Instagram"}
-                    className="h-20 w-20 shrink-0 rounded-full object-cover ring-1 ring-slate-200 sm:h-24 sm:w-24"
-                  />
-                )}
-
-                <div className="min-w-0 flex-1">
-                  {hasText(profileName) && (
-                    <p className="text-lg font-semibold text-slate-950">{profileName}</p>
-                  )}
-                  {hasText(profileHandle) && (
-                    <p className="mt-0.5 truncate text-sm text-slate-500">
-                      {profileHandle.startsWith("@") ? profileHandle : `@${profileHandle}`}
-                    </p>
-                  )}
-
-                  {(hasText(profilePublicationCount) ||
-                    hasText(profileFollowersCount) ||
-                    hasText(profileFollowingCount)) && (
-                    <div className="mt-5 grid max-w-md grid-flow-col auto-cols-fr gap-3 text-center">
-                      {hasText(profilePublicationCount) && (
-                        <div>
-                          <p className="text-lg font-semibold text-slate-950">
-                            {profilePublicationCount}
-                          </p>
-                          <p className="mt-1 text-xs text-slate-500">publicações</p>
-                        </div>
-                      )}
-                      {hasText(profileFollowersCount) && (
-                        <div>
-                          <p className="text-lg font-semibold text-slate-950">
-                            {profileFollowersCount}
-                          </p>
-                          <p className="mt-1 text-xs text-slate-500">seguidores</p>
-                        </div>
-                      )}
-                      {hasText(profileFollowingCount) && (
-                        <div>
-                          <p className="text-lg font-semibold text-slate-950">
-                            {profileFollowingCount}
-                          </p>
-                          <p className="mt-1 text-xs text-slate-500">seguindo</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {(hasText(profileCategory) || hasText(bioText) || hasText(bioLink)) && (
-              <div className="space-y-2">
-                {hasText(profileCategory) && (
-                  <p className="text-sm text-slate-500">{profileCategory}</p>
-                )}
-                {hasText(bioText) && (
-                  <RichText
-                    content={bioText}
-                    className="whitespace-pre-wrap text-sm leading-6 text-slate-800"
-                  />
-                )}
-                {hasText(bioLink) && (
-                  <a
-                    href={bioLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="block break-all text-sm font-medium text-slate-600 hover:text-slate-950"
-                  >
-                    {bioLink}
-                  </a>
-                )}
-              </div>
-            )}
-          </div>
-
-          {profileHighlights.length > 0 && (
-            <div>
-              <p className="mb-3 mt-8 text-base font-semibold uppercase tracking-[0.22em] text-[#5f6f8a]">
-                Destaques
-              </p>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {profileHighlights.map((highlight) => (
-                  <div
-                    key={highlight.id}
-                    className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
-                  >
-                    {hasText(highlight.imageUrl) && (
-                      // img used intentionally: imageUrl may be a base64 data URL (legacy) or HTTPS URL
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={highlight.imageUrl}
-                        alt={hasText(highlight.title) ? highlight.title : "Imagem do destaque do Instagram"}
-                        className="mb-3 h-16 w-16 rounded-full object-cover ring-1 ring-slate-200"
-                      />
-                    )}
-                    {hasText(highlight.title) && (
-                      <p className="text-sm font-medium text-slate-950">{highlight.title}</p>
-                    )}
-                    {hasText(highlight.purpose) && (
-                      <p className="mt-1 text-xs leading-5 text-slate-500">{highlight.purpose}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </SectionCard>
-      )}
-
-      {hasStrategicDirectionSection && (
-        <SectionCard title="Direção estratégica">
-          <div className="space-y-4">
+      {hasStrategy && (
+        <SectionCard title="Visão estratégica">
+          <div className="space-y-10">
             {hasText(d.strategicDirection.channelRole) && (
-              <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                <h3 className="text-base font-semibold text-slate-950">
-                  Papel estratégico do Instagram
-                </h3>
-                <RichText
-                  content={d.strategicDirection.channelRole}
-                  className="mt-3 text-sm leading-7 text-slate-700"
-                />
+              <div className="max-w-4xl border-l-2 border-slate-900 pl-5 sm:pl-7">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Papel estratégico do Instagram</p>
+                <RichText content={d.strategicDirection.channelRole} className="mt-4 text-base leading-8 text-slate-700" />
               </div>
             )}
-          </div>
-        </SectionCard>
-      )}
-
-      {hasFrequencySection && (
-        <SectionCard title="Frequência de publicação">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {visibleFreqItems.map((item) => (
-              <div
-                key={item.id}
-                className="rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300"
-              >
-                {hasText(item.format) && (
-                  <h3 className="text-lg font-semibold text-slate-950">{item.format}</h3>
-                )}
-                {(hasText(item.quantity) || hasText(item.period)) && (
-                  <div className="mt-3 flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
-                    {hasText(item.quantity) && (
-                      <p className="whitespace-pre-wrap text-2xl font-semibold leading-none text-slate-950">
-                        {item.quantity}
-                        {hasText(item.period) && "×"}
-                      </p>
-                    )}
-                    {hasText(item.period) && (
-                      <p className="whitespace-pre-wrap text-sm text-slate-500">
-                        {item.period}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-      )}
-
-      {hasContentAndLanguageSection && (
-        <SectionCard title="Conteúdo e linguagem">
-          <div className="space-y-10">
-            {objectiveItems.length > 0 && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-xl font-semibold text-slate-950">
-                    Objetivos do canal
-                  </h3>
-                </div>
-                <div className="space-y-5">
-                  {objectiveItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-start gap-4"
-                    >
-                      <div className="mt-1 shrink-0 text-slate-500">
-                        <ModuleIcon slug="objetivos-do-projeto" />
-                      </div>
-                      <p className="whitespace-pre-wrap text-base leading-7 text-slate-800">
-                        {item.objective}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {strategicStories.length > 0 && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-xl font-semibold text-slate-950">
-                    Stories estratégicos
-                  </h3>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  {strategicStories.map((item, index) => (
-                    <div
-                      key={item.id}
-                      className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">
-                          STORY {String(index + 1).padStart(2, "0")}
-                        </p>
-                        {hasText(item.journeyStage) && (
-                          <p className="max-w-full rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                            {item.journeyStage}
-                          </p>
-                        )}
-                      </div>
-
-                      {hasText(item.name) && (
-                        <h4 className="mt-5 text-xl font-semibold leading-7 text-slate-950">
-                          {item.name}
-                        </h4>
-                      )}
-
-                      {hasText(item.frequency) && (
-                        <div className="mt-4 flex items-center gap-2 text-slate-500">
-                          <div className="shrink-0">
-                            <ModuleIcon slug="calendario-de-conteudo" />
-                          </div>
-                          <p className="whitespace-pre-wrap text-sm leading-6">
-                            {item.frequency}
-                          </p>
-                        </div>
-                      )}
-
-                      {hasText(item.cta) && (
-                        <div className="mt-auto pt-5">
-                          <div className="border-t border-slate-200 pt-4">
-                            <p className="text-xs font-semibold tracking-[0.16em] text-slate-400">
-                              CTA
-                            </p>
-                            <div className="mt-2 flex items-start justify-between gap-4">
-                              <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                                {item.cta}
-                              </p>
-                              <span className="shrink-0 text-lg leading-6 text-slate-400" aria-hidden="true">
-                                →
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {languageStructureItems.length > 0 && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-xl font-semibold text-slate-950">
-                    Estruturas de linguagem
-                  </h3>
-                </div>
-                <div className="max-w-3xl divide-y divide-slate-200">
-                  {languageStructureItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="py-5 first:pt-0 last:pb-0"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="mt-0.5 shrink-0 text-slate-600">
-                          <ModuleIcon slug="tom-de-voz" />
-                        </div>
-                        <h4 className="text-base font-semibold leading-6 text-slate-900 md:text-lg">
-                          {item.name}
-                        </h4>
-                      </div>
-                      {hasText(item.avoid) && (
-                        <div className="mt-4 flex items-start gap-2 pl-8">
-                          <span className="shrink-0 text-lg font-semibold leading-6 text-red-500" aria-hidden="true">
-                            ×
-                          </span>
-                          <div>
-                            <p className="text-sm font-semibold leading-6 text-red-600">O que evitar</p>
-                            <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                              {item.avoid}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {hashtagItems.length > 0 && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-xl font-semibold text-slate-950">
-                    Hashtags
-                  </h3>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {hashtagItems.map((hashtag, index) => (
-                    <span
-                      key={index}
-                      className="max-w-full break-words rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700"
-                    >
-                      {hashtag.value}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </SectionCard>
-      )}
-
-      {hasVisualDirectionSection && (
-        <SectionCard title="Identidade visual">
-          <div className="space-y-4">
-          {visualReferenceItems.length > 0 && (
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-slate-950">
-                Referências visuais
-              </h3>
-              <div className="space-y-4">
-                {visualReferenceItems.map((ref) => (
-                  <div
-                    key={ref.id}
-                    className="overflow-hidden rounded-2xl bg-slate-50 ring-1 ring-slate-200"
-                  >
-                    {hasText(ref.url) && (
-                      // img used intentionally: url may be a base64 data URL (legacy) or HTTPS URL
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={ref.url}
-                        alt={hasText(ref.title) ? ref.title : "Referência visual do Instagram"}
-                        className="aspect-square w-full object-cover"
-                      />
-                    )}
-                    {(hasText(ref.title) || hasText(ref.description)) && (
-                      <div className="p-6">
-                        {hasText(ref.title) && (
-                          <p className="text-base font-semibold text-slate-950">{ref.title}</p>
-                        )}
-                        {hasText(ref.description) && (
-                          <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">
-                            {ref.description}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          </div>
-        </SectionCard>
-      )}
-
-      {hasConversionSection && (
-        <SectionCard title="Conversão">
-          <div className="space-y-5">
-            <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-500">
-              Etapas de conversão
-            </h3>
-            <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {conversionStages.map((stage, index) => (
-                <div
-                  key={stage.name}
-                  className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5"
-                >
-                  <div>
-                    <p className="text-xs font-semibold tracking-[0.14em] text-slate-400">
-                      {String(index + 1).padStart(2, "0")}
-                    </p>
-                    <h4 className="mt-2 font-serif text-[17px] font-semibold leading-6 text-slate-950 md:text-lg">
-                      {stage.name}
-                    </h4>
-                    <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                      {stage.description}
-                    </p>
-                  </div>
-                  {(hasText(stage.cta) || hasText(stage.destination)) && (
-                    <div className="mt-5">
-                      {hasText(stage.cta) && (
-                        <div className="border-t border-slate-200 pt-4">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-slate-400" aria-hidden="true">
-                              ↗
-                            </span>
-                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                              CTA
-                            </p>
-                          </div>
-                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                            {stage.cta}
-                          </p>
-                        </div>
-                      )}
-                      {hasText(stage.destination) && (
-                        <div className="mt-4 border-t border-slate-200 pt-4">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-slate-400" aria-hidden="true">
-                              →
-                            </span>
-                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                              Destino
-                            </p>
-                          </div>
-                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                            {stage.destination}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </SectionCard>
-      )}
-
-      {false && hasMeasurementSection && (
-        <SectionCard title="Indicadores e mensuração">
-          <div className="space-y-10">
-            {(primaryIndicators.length > 0 ||
-              secondaryIndicators.length > 0 ||
-              vanityMetrics.length > 0) && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-xl font-semibold text-slate-950">
-                    Indicadores de desempenho
-                  </h3>
-                </div>
-                <div className="space-y-4">
-                  {primaryIndicators.length > 0 && (
-                    <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <div className="[&>div>p]:mb-3 [&>div>p]:mt-0 [&>div>p]:text-base [&>div>p]:font-semibold [&>div>p]:normal-case [&>div>p]:tracking-normal [&>div>p]:text-slate-950">
-                        <TextList items={primaryIndicators} label="Indicadores principais" />
-                      </div>
-                    </div>
-                  )}
-                  {secondaryIndicators.length > 0 && (
-                    <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <div className="[&>div>p]:mb-3 [&>div>p]:mt-0 [&>div>p]:text-base [&>div>p]:font-semibold [&>div>p]:normal-case [&>div>p]:tracking-normal [&>div>p]:text-slate-950">
-                        <TextList items={secondaryIndicators} label="Indicadores secundários" />
-                      </div>
-                    </div>
-                  )}
-                  {vanityMetrics.length > 0 && (
-                    <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <div className="[&>div>p]:mb-3 [&>div>p]:mt-0 [&>div>p]:text-base [&>div>p]:font-semibold [&>div>p]:normal-case [&>div>p]:tracking-normal [&>div>p]:text-slate-950">
-                        <TextList items={vanityMetrics} label="Métricas de vaidade" />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {(hasText(d.measurement.weeklyReview) || hasText(d.measurement.monthlyReview)) && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-xl font-semibold text-slate-950">
-                    Rotina de análise
-                  </h3>
-                </div>
-                <div className="space-y-4">
-                  {hasText(d.measurement.weeklyReview) && (
-                    <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <PlainTextField label="Revisão semanal" value={d.measurement.weeklyReview} />
-                    </div>
-                  )}
-                  {hasText(d.measurement.monthlyReview) && (
-                    <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <PlainTextField label="Revisão mensal" value={d.measurement.monthlyReview} />
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {(hasText(d.measurement.keepCriterion) ||
-              hasText(d.measurement.adjustCriterion) ||
-              hasText(d.measurement.stopCriterion)) && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-xl font-semibold text-slate-950">
-                    Critérios de decisão
-                  </h3>
-                </div>
-                <div className="space-y-4">
-                  {hasText(d.measurement.keepCriterion) && (
-                    <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <PlainTextField
-                        label="Critério para manter"
-                        value={d.measurement.keepCriterion}
-                      />
-                    </div>
-                  )}
-                  {hasText(d.measurement.adjustCriterion) && (
-                    <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <PlainTextField
-                        label="Critério para ajustar"
-                        value={d.measurement.adjustCriterion}
-                      />
-                    </div>
-                  )}
-                  {hasText(d.measurement.stopCriterion) && (
-                    <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <PlainTextField
-                        label="Critério para interromper"
-                        value={d.measurement.stopCriterion}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {(hasText(d.measurement.baseline) || measurementHypotheses.length > 0) && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-xl font-semibold text-slate-950">
-                    Linha de base e hipóteses
-                  </h3>
-                </div>
-                <div className="space-y-4">
-                  {hasText(d.measurement.baseline) && (
-                    <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <PlainTextField label="Linha de base" value={d.measurement.baseline} />
-                    </div>
-                  )}
-                  {measurementHypotheses.length > 0 && (
-                    <div className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200">
-                      <div className="[&>div>p]:mb-3 [&>div>p]:mt-0 [&>div>p]:text-base [&>div>p]:font-semibold [&>div>p]:normal-case [&>div>p]:tracking-normal [&>div>p]:text-slate-950">
-                        <TextList items={measurementHypotheses} label="Hipóteses a testar" />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </SectionCard>
-      )}
-
-      {hasIntegrationSection && (
-        <SectionCard title="Integração com outros canais">
-          <div className="space-y-8">
-            {hasText(d.integration.ecosystemRole) && (
-              <div className="rounded-2xl border border-slate-200 border-l-2 border-l-slate-400 bg-white p-5">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-400" aria-hidden="true">
-                    ◎
-                  </span>
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                    Papel do Instagram no ecossistema
-                  </p>
-                </div>
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                  {d.integration.ecosystemRole}
-                </p>
-              </div>
-            )}
-
-            {(receivesAudienceFrom.length > 0 || directsAudienceTo.length > 0) && (
-              <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
-                {receivesAudienceFrom.length > 0 && (
-                  <div className="h-full rounded-2xl border border-slate-200 bg-white p-5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                          Entrada
-                        </p>
-                        <h3 className="mt-2 text-base font-semibold text-slate-950 md:text-lg">
-                          Recebe audiência de
-                        </h3>
-                      </div>
-                      <span className="text-lg text-slate-400" aria-hidden="true">
-                        ↙
-                      </span>
-                    </div>
-                    <div className="mt-4 divide-y divide-slate-200 border-t border-slate-200">
-                      {receivesAudienceFrom.map((item, index) => (
-                        <div key={index} className="flex gap-3 py-3 first:pt-4 last:pb-0">
-                          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
-                          <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                            {item.value}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {directsAudienceTo.length > 0 && (
-                  <div className="h-full rounded-2xl border border-slate-200 bg-white p-5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                          Saída
-                        </p>
-                        <h3 className="mt-2 text-base font-semibold text-slate-950 md:text-lg">
-                          Direciona audiência para
-                        </h3>
-                      </div>
-                      <span className="text-lg text-slate-400" aria-hidden="true">
-                        ↗
-                      </span>
-                    </div>
-                    <div className="mt-4 divide-y divide-slate-200 border-t border-slate-200">
-                      {directsAudienceTo.map((item, index) => (
-                        <div key={index} className="flex gap-3 py-3 first:pt-4 last:pb-0">
-                          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
-                          <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                            {item.value}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {connectionCtas.length > 0 && (
+            {objectives.length > 0 && (
               <div>
-                <h3 className="text-base font-semibold text-slate-950 md:text-lg">
-                  CTAs de conexão entre canais
-                </h3>
-                <div className="mt-4 grid grid-cols-1 gap-x-6 border-t border-slate-200 md:grid-cols-2">
-                  {connectionCtas.map((item, index) => (
-                    <div key={index} className="flex gap-3 border-b border-slate-200 py-4">
-                      <span className="shrink-0 text-xs font-semibold tracking-[0.12em] text-slate-400">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                      <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                        {item.value}
-                      </p>
-                    </div>
-                  ))}
+                <h3 className="font-serif text-xl font-semibold text-slate-950">Objetivos principais</h3>
+                <div className="mt-5 grid gap-x-8 gap-y-4 md:grid-cols-2">
+                  {objectives.map((item) => <div key={item.id} className="flex items-start gap-3"><span className="mt-0.5 shrink-0 text-slate-500"><ModuleIcon slug="objetivos-do-projeto" /></span><p className="whitespace-pre-wrap text-sm leading-7 text-slate-700">{item.objective}</p></div>)}
                 </div>
+              </div>
+            )}
+            {audiences.length > 0 && (
+              <div>
+                <h3 className="font-serif text-xl font-semibold text-slate-950">Público prioritário</h3>
+                <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {audiences.map((item) => <div key={item.id} className="border-t border-slate-300 pt-4">{hasText(item.percentage) && <p className="text-2xl font-semibold text-slate-950">{item.percentage}%</p>}{hasText(item.name) && <h4 className="mt-2 font-semibold text-slate-900">{item.name}</h4>}{hasText(item.description) && <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600">{item.description}</p>}</div>)}
+                </div>
+                <div className="mt-6"><PercentageDistribution items={audiences} /></div>
               </div>
             )}
           </div>
         </SectionCard>
       )}
-      
-      {hasExternalReferencesSection && (
-        <SectionCard title="Referências externas">
-          <div className="space-y-4">
-            {externalReferenceItems.map((ref) => (
-              <div
-                key={ref.id}
-                className="rounded-2xl bg-slate-50 p-6 ring-1 ring-slate-200"
-              >
-                {hasText(ref.imageUrl) && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={ref.imageUrl}
-                    alt={hasText(ref.title) ? ref.title : "Imagem da referência externa"}
-                    className="mb-5 aspect-video w-full rounded-2xl object-cover"
-                  />
-                )}
-                {hasText(ref.title) && (
-                  <h3 className="text-base font-semibold text-slate-950">{ref.title}</h3>
-                )}
-                {hasText(ref.url) && (
-                  <a
-                    href={ref.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-3 block break-all text-sm text-slate-500 hover:text-slate-950"
-                  >
-                    {ref.url}
-                  </a>
-                )}
-                <PlainTextField label="Observações" value={ref.notes} />
+
+      {hasProfileWorld && (
+        <SectionCard title="Perfil do Instagram">
+          <div className="space-y-10">
+            {hasProfile && (
+              <div className="max-w-4xl">
+                <div className="flex items-start gap-5 sm:gap-8">
+                  {hasText(d.profile.photoUrl) && <img src={d.profile.photoUrl} alt={d.profile.displayName || "Foto do perfil do Instagram"} className="h-20 w-20 shrink-0 rounded-full object-cover ring-1 ring-slate-200 sm:h-24 sm:w-24" />}
+                  <div className="min-w-0 flex-1">
+                    {hasText(d.profile.displayName) && <p className="text-lg font-semibold text-slate-950">{d.profile.displayName}</p>}
+                    {hasText(d.profile.handle) && <p className="mt-0.5 break-words text-sm text-slate-500">{d.profile.handle.startsWith("@") ? d.profile.handle : `@${d.profile.handle}`}</p>}
+                    {[d.profile.publicationCount, d.profile.followersCount, d.profile.followingCount].some(hasText) && <div className="mt-5 grid max-w-md grid-flow-col auto-cols-fr gap-3 text-center">{[[d.profile.publicationCount, "publicações"], [d.profile.followersCount, "seguidores"], [d.profile.followingCount, "seguindo"]].map(([value, label]) => hasText(value) && <div key={label}><p className="text-lg font-semibold text-slate-950">{value}</p><p className="mt-1 text-xs text-slate-500">{label}</p></div>)}</div>}
+                  </div>
+                </div>
+                {[d.profile.category, d.profile.bio, d.profile.mainLink].some(hasText) && <div className="mt-6 space-y-2">{hasText(d.profile.category) && <p className="text-sm text-slate-500">{d.profile.category}</p>}{hasText(d.profile.bio) && <RichText content={d.profile.bio} className="whitespace-pre-wrap text-sm leading-6 text-slate-800" />}{hasText(d.profile.mainLink) && <a href={d.profile.mainLink} target="_blank" rel="noopener noreferrer" className="block break-all text-sm font-medium text-slate-600 hover:text-slate-950">{d.profile.mainLink}</a>}</div>}
               </div>
-            ))}
+            )}
+            {highlights.length > 0 && <div><p className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Destaques no perfil</p><div className="flex flex-wrap gap-5">{highlights.map((item) => <div key={item.id} className="w-20 text-center">{hasText(item.imageUrl) && <img src={item.imageUrl} alt={item.title || "Destaque do Instagram"} className="mx-auto h-16 w-16 rounded-full object-cover ring-2 ring-slate-200 ring-offset-2" />}{hasText(item.title) && <p className="mt-3 break-words text-xs font-medium text-slate-700">{item.title}</p>}</div>)}</div></div>}
+            {bioPaths.length > 0 && <div className="max-w-4xl border-t border-slate-200 pt-6"><h3 className="font-serif text-xl font-semibold text-slate-950">Caminhos da página de bio</h3><div className="mt-4 divide-y divide-slate-200">{bioPaths.map((item) => <div key={item.id} className="grid gap-2 py-4 first:pt-0 sm:grid-cols-[minmax(0,180px)_minmax(0,1fr)]"><div>{hasText(item.name) && <p className="font-semibold text-slate-900">{item.name}</p>}</div><div>{hasText(item.destination) && (isSafeLink(item.destination) ? <a href={item.destination} target="_blank" rel="noopener noreferrer" className="break-all text-sm font-medium text-slate-700 underline decoration-slate-300 underline-offset-4">{item.destination}</a> : <p className="break-words text-sm font-medium text-slate-700">{item.destination}</p>)}{hasText(item.description) && <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-500">{item.description}</p>}</div></div>)}</div></div>}
+            {(highlights.length > 0 || pinnedPosts.length > 0) && <div className="grid gap-8 border-t border-slate-200 pt-8 lg:grid-cols-2">{highlights.length > 0 && <div><h3 className="font-serif text-xl font-semibold text-slate-950">Função dos Destaques</h3><div className="mt-5 grid gap-4 sm:grid-cols-2">{highlights.map((item) => <div key={item.id} className="flex gap-3 rounded-2xl border border-slate-200 p-4">{hasText(item.imageUrl) && <img src={item.imageUrl} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover" />}<div>{hasText(item.title) && <p className="font-semibold text-slate-900">{item.title}</p>}{hasText(item.purpose) && <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-600">{item.purpose}</p>}</div></div>)}</div></div>}{pinnedPosts.length > 0 && <div><h3 className="font-serif text-xl font-semibold text-slate-950">Publicações fixadas</h3><div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">{pinnedPosts.map((item, index) => <div key={item.id} className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white">{hasText(item.imageUrl) && <img src={item.imageUrl} alt={item.title || `Publicação fixada ${index + 1}`} className="aspect-square w-full object-cover" />}<div className="p-2.5 sm:p-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Fixado {index + 1}</p>{hasText(item.title) && <p className="mt-1 break-words text-xs font-semibold text-slate-900 sm:text-sm">{item.title}</p>}{hasText(item.strategicRole) && <p className="mt-1 hidden whitespace-pre-wrap text-xs leading-5 text-slate-500 sm:block">{item.strategicRole}</p>}</div></div>)}</div>{pinnedPosts.some((item) => hasText(item.strategicRole)) && <div className="mt-4 space-y-2 sm:hidden">{pinnedPosts.map((item, index) => hasText(item.strategicRole) && <p key={item.id} className="text-xs leading-5 text-slate-600"><span className="font-semibold">Fixado {index + 1}:</span> {item.strategicRole}</p>)}</div>}</div>}</div>}
           </div>
         </SectionCard>
       )}
 
-      {!hasVisibleInstagramContent && <EmptyState />}
+      {(hasVisual || hasSimulations) && (
+        <SectionCard title="Direção e simulações visuais">
+          <div className="space-y-12">
+            {hasVisual && <div><h3 className="font-serif text-2xl font-semibold text-slate-950">Direção visual</h3>{hasText(d.visualGuideline) && <div className="mt-5 max-w-4xl border-l-2 border-slate-400 pl-5"><p className="whitespace-pre-wrap text-base leading-7 text-slate-700">{d.visualGuideline}</p></div>}<div className="mt-7 grid gap-7 md:grid-cols-2">{visualElements.length > 0 && <div><p className="text-sm font-semibold text-slate-900">Elementos visuais</p><div className="mt-3 flex flex-wrap gap-2">{visualElements.map((item) => <span key={item.id} className="flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1.5 text-sm text-slate-700"><span aria-hidden="true">◇</span>{item.value}</span>)}</div></div>}{visualAvoidItems.length > 0 && <div><p className="text-sm font-semibold text-red-600">O que evitar</p><div className="mt-3 space-y-2">{visualAvoidItems.map((item) => <div key={item.id} className="flex items-start gap-2"><span className="font-semibold text-red-500" aria-hidden="true">×</span><p className="text-sm leading-6 text-slate-700">{item.value}</p></div>)}</div></div>}</div>{visualReferences.length > 0 && <div className="mt-9"><h4 className="font-serif text-xl font-semibold text-slate-950">Referências visuais</h4><div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{visualReferences.map((item) => <div key={item.id} className="overflow-hidden rounded-2xl border border-slate-200">{hasText(item.url) && <img src={item.url} alt={item.title || "Referência visual do Instagram"} className="aspect-square w-full object-cover" />}{(hasText(item.title) || hasText(item.description)) && <div className="p-4">{hasText(item.title) && <p className="font-semibold text-slate-900">{item.title}</p>}{hasText(item.description) && <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600">{item.description}</p>}</div>}</div>)}</div></div>}</div>}
+            {hasSimulations && <div className={hasVisual ? "border-t border-slate-200 pt-10" : ""}><h3 className="font-serif text-2xl font-semibold text-slate-950">Simulações visuais de conteúdo</h3><div className="mt-6"><VisualSimulations carousel={carousel} card={staticCard} reel={reelCover} /></div></div>}
+          </div>
+        </SectionCard>
+      )}
+
+      {contentFronts.length > 0 && <SectionCard title="Estratégia de conteúdo"><PercentageDistribution items={contentFronts} /><div className="mt-7 grid gap-4 md:grid-cols-2 lg:grid-cols-3">{contentFronts.map((item) => <div key={item.id} className="rounded-2xl border border-slate-200 p-5">{hasText(item.percentage) && <p className="text-2xl font-semibold text-slate-950">{item.percentage}%</p>}{hasText(item.name) && <h3 className="mt-2 font-serif text-xl font-semibold text-slate-950">{item.name}</h3>}{hasText(item.description) && <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-600">{item.description}</p>}</div>)}</div></SectionCard>}
+
+      {frequencies.length > 0 && <SectionCard title="Formatos e frequência"><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">{frequencies.map((item) => <div key={item.id} className="rounded-2xl border border-slate-200 bg-white p-4">{hasText(item.format) && <h3 className="text-lg font-semibold text-slate-950">{item.format}</h3>}{(hasText(item.quantity) || hasText(item.period)) && <div className="mt-3 flex flex-wrap items-baseline gap-1.5">{hasText(item.quantity) && <p className="text-2xl font-semibold leading-none text-slate-950">{item.quantity}{hasText(item.period) && "×"}</p>}{hasText(item.period) && <p className="text-sm text-slate-500">{item.period}</p>}</div>}</div>)}</div></SectionCard>}
+
+      {(hasConversion || hasIntegration) && <SectionCard title="Conversão e circulação"><div className="space-y-12">{hasConversion && <div><h3 className="font-serif text-2xl font-semibold text-slate-950">Conversão</h3>{conversionStages.length > 0 && <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">{conversionStages.map((stage, index) => <div key={stage.name} className="rounded-2xl border border-slate-200 p-5"><p className="text-xs font-semibold tracking-widest text-slate-400">{String(index + 1).padStart(2, "0")}</p><h4 className="mt-2 font-serif text-lg font-semibold text-slate-950">{stage.name}</h4><p className="mt-3 text-sm leading-6 text-slate-600">{stage.description}</p>{hasText(stage.cta) && <div className="mt-4 border-t border-slate-200 pt-4"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">CTA</p><p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{stage.cta}</p></div>}{hasText(stage.destination) && <div className="mt-4 border-t border-slate-200 pt-4"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Destino</p><p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{stage.destination}</p></div>}</div>)}</div>}{conversionRoutes.length > 0 && <div className="mt-9"><h4 className="font-serif text-xl font-semibold text-slate-950">Rotas de conversão</h4><div className="mt-5 space-y-5">{conversionRoutes.map((route) => <div key={route.id} className="rounded-2xl border border-slate-200 p-5 sm:p-6"><div className="grid gap-2 sm:grid-cols-[180px_minmax(0,1fr)]">{hasText(route.name) && <h5 className="font-semibold text-slate-950">{route.name}</h5>}{hasText(route.audience) && <p className="whitespace-pre-wrap text-sm leading-6 text-slate-600"><span className="font-semibold text-slate-700">Para quem:</span> {route.audience}</p>}</div>{route.steps.length > 0 && <div className="mt-5 flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center">{route.steps.map((step, index) => <div key={step.id} className="contents"><div className="rounded-xl bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700 ring-1 ring-slate-200"><span className="mr-2 text-xs font-semibold text-slate-400">{index + 1}</span>{step.value}</div>{index < route.steps.length - 1 && <span className="self-center text-slate-400"><span className="md:hidden">↓</span><span className="hidden md:inline">→</span></span>}</div>)}</div>}</div>)}</div></div>}</div>}{hasIntegration && <div className={hasConversion ? "border-t border-slate-200 pt-10" : ""}><h3 className="font-serif text-2xl font-semibold text-slate-950">Integração com outros canais</h3><div className="mt-6 grid gap-3 lg:grid-cols-[1fr_auto_1.15fr_auto_1fr] lg:items-stretch">{receives.length > 0 && <div className="rounded-2xl border border-slate-200 p-5"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Recebe de</p><ul className="mt-3 space-y-2">{receives.map((item, index) => <li key={index} className="text-sm leading-6 text-slate-700">{item}</li>)}</ul></div>} {receives.length > 0 && (hasText(d.integration.ecosystemRole) || directs.length > 0) && <span className="self-center text-center text-slate-400"><span className="lg:hidden">↓</span><span className="hidden lg:inline">→</span></span>}{hasText(d.integration.ecosystemRole) && <div className="rounded-2xl bg-slate-950 p-5 text-white"><p className="text-xs font-semibold uppercase tracking-wider text-slate-300">Instagram no ecossistema</p><p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-100">{d.integration.ecosystemRole}</p></div>}{directs.length > 0 && hasText(d.integration.ecosystemRole) && <span className="self-center text-center text-slate-400"><span className="lg:hidden">↓</span><span className="hidden lg:inline">→</span></span>}{directs.length > 0 && <div className="rounded-2xl border border-slate-200 p-5"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Direciona para</p><ul className="mt-3 space-y-2">{directs.map((item, index) => <li key={index} className="text-sm leading-6 text-slate-700">{item}</li>)}</ul></div>}</div>{connectionCtas.length > 0 && <div className="mt-7"><p className="font-semibold text-slate-900">CTAs de conexão entre canais</p><div className="mt-3 divide-y divide-slate-200 border-y border-slate-200">{connectionCtas.map((item, index) => <div key={index} className="flex gap-3 py-3"><span className="text-xs font-semibold text-slate-400">{String(index + 1).padStart(2, "0")}</span><p className="text-sm leading-6 text-slate-700">{item}</p></div>)}</div></div>}</div>}</div></SectionCard>}
+
+      {(hashtagCategories.length > 0 || hasText(d.hashtagUsageGuidance)) && <SectionCard title="Banco de hashtags"><div className="grid gap-6 md:grid-cols-2">{hashtagCategories.map((category) => <div key={category.id} className="border-t border-slate-300 pt-4">{hasText(category.name) && <h3 className="font-serif text-lg font-semibold text-slate-950">{category.name}</h3>}<div className="mt-3 flex flex-wrap gap-2">{category.hashtags.map((hashtag, index) => <span key={index} className="max-w-full break-words rounded-full border border-slate-200 px-3 py-1.5 text-sm text-slate-700">{hashtag}</span>)}</div></div>)}</div>{hasText(d.hashtagUsageGuidance) && <div className="mt-8 max-w-4xl border-l-2 border-slate-300 pl-5"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Orientação de uso</p><p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-700">{d.hashtagUsageGuidance}</p></div>}</SectionCard>}
+
+      {indicators.length > 0 && <SectionCard title="Indicadores principais"><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{indicators.map((category) => <div key={category.id} className="rounded-2xl border border-slate-200 p-5">{hasText(category.name) && <h3 className="font-serif text-lg font-semibold text-slate-950">{category.name}</h3>}<ul className="mt-4 space-y-3">{category.indicators.map((item) => <li key={item.id} className="flex items-start gap-2 text-sm leading-6 text-slate-700"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />{item.name}</li>)}</ul></div>)}</div></SectionCard>}
+
+      {externalReferences.length > 0 && <SectionCard title="Referências externas"><div className="grid gap-4 md:grid-cols-2">{externalReferences.map((item) => <div key={item.id} className="flex items-start gap-4 rounded-2xl border border-slate-200 p-4 sm:p-5">{hasText(item.imageUrl) && <img src={item.imageUrl} alt={item.title || "Referência externa"} className="h-16 w-16 shrink-0 rounded-full object-cover ring-1 ring-slate-200" />}<div className="min-w-0">{hasText(item.title) && <h3 className="font-semibold text-slate-950">{item.title}</h3>}{hasText(item.url) && (isSafeLink(item.url) ? <a href={item.url} target="_blank" rel="noopener noreferrer" className="mt-1 block break-all text-sm text-slate-500 underline decoration-slate-300 underline-offset-4">{item.url}</a> : <p className="mt-1 break-all text-sm text-slate-500">{item.url}</p>)}{hasText(item.notes) && <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600">{item.notes}</p>}</div></div>)}</div></SectionCard>}
+
+      {!hasAny && <EmptyState />}
     </article>
   );
 }
