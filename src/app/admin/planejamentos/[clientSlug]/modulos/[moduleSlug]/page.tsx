@@ -101,9 +101,8 @@ import {
 
 import TikTokForm, {
   initialTikTokData,
-  initialTikTokFrequencyItems,
   TikTokData,
-  normalizeTikTokTextList,
+  normalizeTikTokData,
 } from "@/Components/modulos/TikTokForm";
 
 import YoutubeForm, {
@@ -1043,40 +1042,7 @@ if (isInstagramModule) {
 }
 
 if (isTiktokModule && isTikTokData(savedContent)) {
-  setTiktokData({
-    frequencyItems:
-      Array.isArray(savedContent.frequencyItems) &&
-      savedContent.frequencyItems.length
-        ? savedContent.frequencyItems.map((item) => ({
-            format: item.format || "",
-            quantity: item.quantity || "",
-            period: item.period || "por semana",
-            observation: item.observation || "",
-          }))
-        : initialTikTokFrequencyItems,
-    objectives: normalizeTikTokTextList(savedContent.objectives),
-    languageStructures: normalizeTikTokTextList(savedContent.languageStructures),
-    contents: normalizeTikTokTextList(savedContent.contents),
-    mainFormats: savedContent.mainFormats || "",
-    contentSeries: savedContent.contentSeries || "",
-    visualStrategy: savedContent.visualStrategy || "",
-    visualReferences:
-      Array.isArray(savedContent.visualReferences) &&
-      savedContent.visualReferences.length
-        ? savedContent.visualReferences.map((reference) => ({
-            image: reference.image || "",
-          }))
-        : initialTikTokData.visualReferences,
-    openingHooks: savedContent.openingHooks || "",
-    retentionResources: savedContent.retentionResources || "",
-    references:
-      Array.isArray(savedContent.references) && savedContent.references.length
-        ? savedContent.references.map((reference) => ({
-            title: reference.title || "",
-            link: reference.link || "",
-          }))
-        : initialTikTokData.references,
-  });
+  setTiktokData(normalizeTikTokData(savedContent));
 }
 
 if (isYoutubeModule && isYoutubeData(savedContent)) {
@@ -3738,6 +3704,7 @@ function isProjectObjectivesData(
     isSaving={isSaving}
     isDisabled={!isModuleSelected}
     onSave={() => saveModule()}
+    planningProjectId={project.id}
   />
 ) : isYoutubeModule ? (
   <YoutubeForm
