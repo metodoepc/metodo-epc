@@ -120,9 +120,8 @@ import FacebookForm, {
 
 import LinkedInForm, {
   initialLinkedInData,
-  initialLinkedInFrequencyItems,
   LinkedInData,
-  normalizeLinkedInTextList,
+  normalizeLinkedInData,
 } from "@/Components/modulos/LinkedInForm";
 
 import WhatsAppForm, {
@@ -1091,42 +1090,7 @@ if (isFacebookModule && isFacebookData(savedContent)) {
 }
 
 if (isLinkedinModule && isLinkedInData(savedContent)) {
-  setLinkedinData({
-    frequencyItems:
-      Array.isArray(savedContent.frequencyItems) &&
-      savedContent.frequencyItems.length
-        ? savedContent.frequencyItems.map((item) => ({
-            format: item.format || "",
-            quantity: item.quantity || "",
-            period: item.period || "por semana",
-            observation: item.observation || "",
-          }))
-        : initialLinkedInFrequencyItems,
-    objectives: normalizeLinkedInTextList(savedContent.objectives),
-    languageStructures: normalizeLinkedInTextList(savedContent.languageStructures),
-    contents: normalizeLinkedInTextList(savedContent.contents),
-    visualStrategy: savedContent.visualStrategy || "",
-    visualReferences:
-      Array.isArray(savedContent.visualReferences) &&
-      savedContent.visualReferences.length
-        ? savedContent.visualReferences.map((r) => ({
-            image: r.image || "",
-          }))
-        : initialLinkedInData.visualReferences,
-    profilePhoto: savedContent.profilePhoto || "",
-    profileCover: savedContent.profileCover || "",
-    profileName: savedContent.profileName || "",
-    headline: savedContent.headline || "",
-    authorityThemes: savedContent.authorityThemes || "",
-    aboutProfile: savedContent.aboutProfile || "",
-    references:
-      Array.isArray(savedContent.references) && savedContent.references.length
-        ? savedContent.references.map((r) => ({
-            title: r.title || "",
-            link: r.link || "",
-          }))
-        : initialLinkedInData.references,
-  });
+  setLinkedinData(normalizeLinkedInData(savedContent));
 }
 
 if (isWhatsappModule && isWhatsAppData(savedContent)) {
@@ -1700,6 +1664,11 @@ function isLinkedInData(value: unknown): value is LinkedInData {
   return (
     "profileName" in value ||
     "headline" in value ||
+    "professionalTitle" in value ||
+    "strategicRole" in value ||
+    "newsletter" in value ||
+    "frequencyItems" in value ||
+    "objectives" in value ||
     "authorityThemes" in value ||
     "aboutProfile" in value
   );
@@ -3699,6 +3668,7 @@ function isProjectObjectivesData(
     isSaving={isSaving}
     isDisabled={!isModuleSelected}
     onSave={() => saveModule()}
+    planningProjectId={project.id}
   />
 ) : isWhatsappModule ? (
   <WhatsAppForm
