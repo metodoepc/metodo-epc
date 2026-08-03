@@ -126,9 +126,8 @@ import LinkedInForm, {
 
 import WhatsAppForm, {
   initialWhatsAppData,
-  initialWhatsAppFrequencyItems,
   WhatsAppData,
-  normalizeWhatsAppTextList,
+  normalizeWhatsAppData,
 } from "@/Components/modulos/WhatsAppForm";
 
 import BlogForm, {
@@ -1094,44 +1093,7 @@ if (isLinkedinModule && isLinkedInData(savedContent)) {
 }
 
 if (isWhatsappModule && isWhatsAppData(savedContent)) {
-  setWhatsappData({
-    frequencyItems:
-      Array.isArray(savedContent.frequencyItems) &&
-      savedContent.frequencyItems.length
-        ? savedContent.frequencyItems.map((item) => ({
-            format: item.format || "",
-            quantity: item.quantity || "",
-            period: item.period || "por semana",
-            observation: item.observation || "",
-          }))
-        : initialWhatsAppFrequencyItems,
-    objectives: normalizeWhatsAppTextList(savedContent.objectives),
-    languageStructures: normalizeWhatsAppTextList(savedContent.languageStructures),
-    contents: normalizeWhatsAppTextList(savedContent.contents),
-    firstContactFlow: savedContent.firstContactFlow || "",
-    nurtureFlow: savedContent.nurtureFlow || "",
-    salesFlow: savedContent.salesFlow || "",
-    postSaleFlow: savedContent.postSaleFlow || "",
-    visualStrategy: savedContent.visualStrategy || "",
-    visualReferences:
-      Array.isArray(savedContent.visualReferences) &&
-      savedContent.visualReferences.length
-        ? savedContent.visualReferences.map((r) => ({
-            image: r.image || "",
-          }))
-        : initialWhatsAppData.visualReferences,
-    mainNumber: savedContent.mainNumber || "",
-    directLink: savedContent.directLink || "",
-    initialMessage: savedContent.initialMessage || "",
-    serviceNotes: savedContent.serviceNotes || "",
-    references:
-      Array.isArray(savedContent.references) && savedContent.references.length
-        ? savedContent.references.map((r) => ({
-            title: r.title || "",
-            link: r.link || "",
-          }))
-        : initialWhatsAppData.references,
-  });
+  setWhatsappData(normalizeWhatsAppData(savedContent));
 }
 
 if (isBlogModule && isBlogData(savedContent)) {
@@ -1684,6 +1646,10 @@ function isWhatsAppData(value: unknown): value is WhatsAppData {
     "nurtureFlow" in value ||
     "salesFlow" in value ||
     "postSaleFlow" in value ||
+    "strategicRole" in value ||
+    "segments" in value ||
+    "routes" in value ||
+    "recurringCommunications" in value ||
     "mainNumber" in value ||
     "directLink" in value
   );
@@ -3679,6 +3645,7 @@ function isProjectObjectivesData(
     isSaving={isSaving}
     isDisabled={!isModuleSelected}
     onSave={() => saveModule()}
+    planningProjectId={project.id}
   />
 ) : isBlogModule ? (
   <BlogForm
