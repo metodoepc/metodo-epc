@@ -107,9 +107,8 @@ import TikTokForm, {
 
 import YoutubeForm, {
   initialYoutubeData,
-  initialYoutubeFrequencyItems,
   YoutubeData,
-  normalizeYoutubeTextList,
+  normalizeYoutubeData,
 } from "@/Components/modulos/YoutubeForm";
 
 import FacebookForm, {
@@ -1046,43 +1045,7 @@ if (isTiktokModule && isTikTokData(savedContent)) {
 }
 
 if (isYoutubeModule && isYoutubeData(savedContent)) {
-  setYoutubeData({
-    frequencyItems:
-      Array.isArray(savedContent.frequencyItems) &&
-      savedContent.frequencyItems.length
-        ? savedContent.frequencyItems.map((item) => ({
-            format: item.format || "",
-            quantity: item.quantity || "",
-            period: item.period || "por semana",
-            observation: item.observation || "",
-          }))
-        : initialYoutubeFrequencyItems,
-    objectives: normalizeYoutubeTextList(savedContent.objectives),
-    languageStructures: normalizeYoutubeTextList(savedContent.languageStructures),
-    editingStyle: savedContent.editingStyle || "",
-    visualReferences:
-      Array.isArray(savedContent.visualReferences) &&
-      savedContent.visualReferences.length
-        ? savedContent.visualReferences.map((reference) => ({
-            image: reference.image || "",
-          }))
-        : initialYoutubeData.visualReferences,
-    seoStrategies: normalizeYoutubeTextList(savedContent.seoStrategies),
-    contents: normalizeYoutubeTextList(savedContent.contents),
-    channelPhoto: savedContent.channelPhoto || "",
-    channelCover: savedContent.channelCover || "",
-    channelName: savedContent.channelName || "",
-    channelCategory: savedContent.channelCategory || "",
-    channelDescription: savedContent.channelDescription || "",
-    suggestedPlaylists: savedContent.suggestedPlaylists || "",
-    references:
-      Array.isArray(savedContent.references) && savedContent.references.length
-        ? savedContent.references.map((reference) => ({
-            title: reference.title || "",
-            link: reference.link || "",
-          }))
-        : initialYoutubeData.references,
-  });
+  setYoutubeData(normalizeYoutubeData(savedContent));
 }
 
 if (isFacebookModule && isFacebookData(savedContent)) {
@@ -3715,6 +3678,7 @@ function isProjectObjectivesData(
     isSaving={isSaving}
     isDisabled={!isModuleSelected}
     onSave={() => saveModule()}
+    planningProjectId={project.id}
   />
 ) : isFacebookModule ? (
   <FacebookForm
