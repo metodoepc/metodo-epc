@@ -7,11 +7,12 @@ export const PLANNING_MEDIA_BUCKET = "planning-media";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type InstagramMediaCategory = "profile" | "references" | "highlights";
+export type PlanningMediaCategory = InstagramMediaCategory | "educational-materials";
 
 export type UploadPlanningMediaInput = {
   file: File;
   planningProjectId: string;
-  category: InstagramMediaCategory;
+  category: PlanningMediaCategory;
 };
 
 export type UploadPlanningMediaResult = {
@@ -21,27 +22,39 @@ export type UploadPlanningMediaResult = {
 
 // ─── MIME types ───────────────────────────────────────────────────────────────
 
-const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-
-const MIME_TO_EXTENSION: Record<string, string> = {
+const IMAGE_MIME_TO_EXTENSION: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
+};
+
+const EDUCATIONAL_MIME_TO_EXTENSION: Record<string, string> = {
+  "application/pdf": "pdf",
+  "application/msword": "doc",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  "application/vnd.ms-excel": "xls",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+  "text/csv": "csv",
+  "application/vnd.ms-powerpoint": "ppt",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+  "text/plain": "txt",
 };
 
 // ─── Size limits ──────────────────────────────────────────────────────────────
 
 const MB = 1024 * 1024;
 
-const CATEGORY_MAX_BYTES: Record<InstagramMediaCategory, number> = {
-  profile: 2 * MB,
-  highlights: 2 * MB,
-  references: 5 * MB,
+type CategoryConfig = { maxBytes: number; mimeToExtension: Record<string, string>; directory: string };
+const CATEGORY_CONFIG: Record<PlanningMediaCategory, CategoryConfig> = {
+  profile: { maxBytes: 2 * MB, mimeToExtension: IMAGE_MIME_TO_EXTENSION, directory: "instagram/profile" },
+  highlights: { maxBytes: 2 * MB, mimeToExtension: IMAGE_MIME_TO_EXTENSION, directory: "instagram/highlights" },
+  references: { maxBytes: 5 * MB, mimeToExtension: IMAGE_MIME_TO_EXTENSION, directory: "instagram/references" },
+  "educational-materials": { maxBytes: 25 * MB, mimeToExtension: EDUCATIONAL_MIME_TO_EXTENSION, directory: "educational-materials/files" },
 };
 
 // ─── Validation helpers ───────────────────────────────────────────────────────
 
-const VALID_CATEGORIES = new Set<string>(["profile", "references", "highlights"]);
+const VALID_CATEGORIES = new Set<string>(Object.keys(CATEGORY_CONFIG));
 
 // Matches Supabase-generated UUIDs (v4 and compatible formats)
 const UUID_REGEX =
@@ -129,18 +142,23 @@ export async function uploadPlanningMedia(
     throw new Error(ERRORS.emptyFile);
   }
 
-  // 5. MIME type must be in the allowed set
-  if (!ALLOWED_MIME_TYPES.has(file.type)) {
-    throw new Error(ERRORS.invalidMime);
-  }
-
-  // 6. Category must be one of the defined values
+  // 5. Category must be one of the defined values
   if (!VALID_CATEGORIES.has(category)) {
     throw new Error(ERRORS.invalidCategory);
   }
 
+  const config = CATEGORY_CONFIG[category];
+
+  // 6. MIME and extension must match the category allowlist.
+  const expectedExtension = config.mimeToExtension[file.type];
+  if (!expectedExtension) throw new Error(ERRORS.invalidMime);
+  const nameParts = file.name.toLowerCase().split(".");
+  if (nameParts.length !== 2 || nameParts[1] !== expectedExtension) {
+    throw new Error("A extensão do arquivo não corresponde ao formato informado.");
+  }
+
   // 7. File size must not exceed the category limit
-  const maxBytes = CATEGORY_MAX_BYTES[category as InstagramMediaCategory];
+  const maxBytes = config.maxBytes;
   if (file.size > maxBytes) {
     const limitMb = maxBytes / MB;
     throw new Error(ERRORS.fileTooLarge(category, limitMb));
@@ -160,9 +178,9 @@ export async function uploadPlanningMedia(
 
   // 10. Build collision-free storage path
   //     {planningProjectId}/instagram/{category}/{uuid}.{ext}
-  const extension = MIME_TO_EXTENSION[file.type];
+  const extension = expectedExtension;
   const fileId = generateFileId();
-  const path = `${trimmedProjectId}/instagram/${category}/${fileId}.${extension}`;
+  const path = `${trimmedProjectId}/${config.directory}/${fileId}.${extension}`;
 
   // 11. Upload — upsert: false prevents overwriting any existing file
   const { error: uploadError } = await supabase.storage
