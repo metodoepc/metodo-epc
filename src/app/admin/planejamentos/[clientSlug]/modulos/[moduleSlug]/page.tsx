@@ -159,6 +159,7 @@ import LivesForm, {
 import MateriaisEducacionaisForm, {
   initialEducationalMaterialsData,
   EducationalMaterialsData,
+  normalizeEducationalMaterialsData,
 } from "@/Components/modulos/MateriaisEducacionaisForm";
 
 import EstrategiaDoSiteForm, {
@@ -1205,29 +1206,7 @@ if (isSiteStrategyModule && isSiteStrategyData(savedContent)) {
 }
 
 if (isEducationalMaterialsModule && isEducationalMaterialsData(savedContent)) {
-  setEducationalMaterialsData({
-    materials:
-      Array.isArray(savedContent.materials) && savedContent.materials.length
-        ? savedContent.materials.map((m) => ({
-            title: m.title || "",
-            type: m.type || "E-book",
-            content: m.content || "",
-            objective: m.objective || "",
-            distribution: m.distribution || "",
-            fileName: m.fileName || "",
-            fileData: m.fileData || "",
-            materialLink: m.materialLink || "",
-          }))
-        : initialEducationalMaterialsData.materials,
-    strategy: savedContent.strategy || "",
-    references:
-      Array.isArray(savedContent.references) && savedContent.references.length
-        ? savedContent.references.map((r) => ({
-            title: r.title || "",
-            link: r.link || "",
-          }))
-        : initialEducationalMaterialsData.references,
-  });
+  setEducationalMaterialsData(normalizeEducationalMaterialsData(savedContent));
 }
 
 if (isLivesModule && isLivesData(savedContent)) {
@@ -3606,6 +3585,7 @@ function isProjectObjectivesData(
     setData={setEducationalMaterialsData}
     clientSlug={clientSlug}
     presentationHref={`/apresentacao/${project.slug}`}
+    planningProjectId={project.id}
     isSaving={isSaving}
     isDisabled={!isModuleSelected}
     onSave={() => saveModule()}
