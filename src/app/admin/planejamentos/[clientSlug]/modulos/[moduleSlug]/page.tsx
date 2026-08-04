@@ -132,9 +132,8 @@ import WhatsAppForm, {
 
 import BlogForm, {
   initialBlogData,
-  initialBlogFrequencyItems,
   BlogData,
-  normalizeBlogTextList,
+  normalizeBlogData,
 } from "@/Components/modulos/BlogForm";
 
 import PinterestForm, {
@@ -1097,46 +1096,7 @@ if (isWhatsappModule && isWhatsAppData(savedContent)) {
 }
 
 if (isBlogModule && isBlogData(savedContent)) {
-  setBlogData({
-    frequencyItems:
-      Array.isArray(savedContent.frequencyItems) &&
-      savedContent.frequencyItems.length
-        ? savedContent.frequencyItems.map((item) => ({
-            format: item.format || "",
-            quantity: item.quantity || "",
-            period: item.period || "por semana",
-            observation: item.observation || "",
-          }))
-        : initialBlogFrequencyItems,
-    objectives: normalizeBlogTextList(savedContent.objectives),
-    languageStructures: normalizeBlogTextList(savedContent.languageStructures),
-    visualStrategy: savedContent.visualStrategy || "",
-    visualReferences:
-      Array.isArray(savedContent.visualReferences) &&
-      savedContent.visualReferences.length
-        ? savedContent.visualReferences.map((r) => ({
-            image: r.image || "",
-          }))
-        : initialBlogData.visualReferences,
-    priorityKeywords: savedContent.priorityKeywords || "",
-    blogCategories: savedContent.blogCategories || "",
-    seoGuidelines: savedContent.seoGuidelines || "",
-    contents:
-      Array.isArray(savedContent.contents) && savedContent.contents.length
-        ? savedContent.contents.map((c) => ({
-            title: c.title || "",
-            suggestedDate: c.suggestedDate || "",
-            observation: c.observation || "",
-          }))
-        : initialBlogData.contents,
-    references:
-      Array.isArray(savedContent.references) && savedContent.references.length
-        ? savedContent.references.map((r) => ({
-            title: r.title || "",
-            link: r.link || "",
-          }))
-        : initialBlogData.references,
-  });
+  setBlogData(normalizeBlogData(savedContent));
 }
 
 if (isPodcastsModule && isPodcastsData(savedContent)) {
@@ -1663,7 +1623,11 @@ function isBlogData(value: unknown): value is BlogData {
   return (
     "priorityKeywords" in value ||
     "blogCategories" in value ||
-    "seoGuidelines" in value
+    "seoGuidelines" in value ||
+    "strategicRole" in value ||
+    "blogName" in value ||
+    "pillars" in value ||
+    "topics" in value
   );
 }
 
@@ -3656,6 +3620,7 @@ function isProjectObjectivesData(
     isSaving={isSaving}
     isDisabled={!isModuleSelected}
     onSave={() => saveModule()}
+    planningProjectId={project.id}
   />
 ) : isPinterestModule ? (
   <PinterestForm
