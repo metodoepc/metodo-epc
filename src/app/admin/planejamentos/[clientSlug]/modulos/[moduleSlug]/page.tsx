@@ -152,9 +152,8 @@ import PodcastsForm, {
 
 import LivesForm, {
   initialLivesData,
-  initialLivesFrequencyItems,
   LivesData,
-  normalizeLivesTextList,
+  normalizeLivesData,
 } from "@/Components/modulos/LivesForm";
 
 import MateriaisEducacionaisForm, {
@@ -1232,59 +1231,7 @@ if (isEducationalMaterialsModule && isEducationalMaterialsData(savedContent)) {
 }
 
 if (isLivesModule && isLivesData(savedContent)) {
-  setLivesData({
-    frequencyItems:
-      Array.isArray(savedContent.frequencyItems) &&
-      savedContent.frequencyItems.length
-        ? savedContent.frequencyItems.map((item) => ({
-            format: item.format || "",
-            quantity: item.quantity || "",
-            period: item.period || "por semana",
-            observation: item.observation || "",
-          }))
-        : initialLivesFrequencyItems,
-    networkFrequencies:
-      Array.isArray(savedContent.networkFrequencies) &&
-      savedContent.networkFrequencies.length
-        ? savedContent.networkFrequencies.map((item) => ({
-            channel: item.channel || "",
-            frequency: item.frequency || "",
-          }))
-        : [{ channel: "", frequency: "" }],
-    objectives: normalizeLivesTextList(savedContent.objectives),
-    languageStructures: normalizeLivesTextList(savedContent.languageStructures),
-    openingScript: savedContent.openingScript || "",
-    centralContent: savedContent.centralContent || "",
-    publicInteraction: savedContent.publicInteraction || "",
-    closingAndCall: savedContent.closingAndCall || "",
-    visualStrategy: savedContent.visualStrategy || "",
-    visualReferences:
-      Array.isArray(savedContent.visualReferences) &&
-      savedContent.visualReferences.length
-        ? savedContent.visualReferences.map((r) => ({
-            image: r.image || "",
-          }))
-        : initialLivesData.visualReferences,
-    contents:
-      Array.isArray(savedContent.contents) && savedContent.contents.length
-        ? savedContent.contents.map((c) => ({
-            title: c.title || "",
-            suggestedDate: c.suggestedDate || "",
-            channel: c.channel || "",
-            objective: c.objective || "",
-            observation: c.observation || "",
-          }))
-        : initialLivesData.contents,
-    beforeAndAfterPromotion: savedContent.beforeAndAfterPromotion || "",
-    repurposingStrategy: savedContent.repurposingStrategy || "",
-    references:
-      Array.isArray(savedContent.references) && savedContent.references.length
-        ? savedContent.references.map((r) => ({
-            title: r.title || "",
-            link: r.link || "",
-          }))
-        : initialLivesData.references,
-  });
+  setLivesData(normalizeLivesData(savedContent));
 }
 
 if (isPinterestModule && isPinterestData(savedContent)) {
@@ -3648,6 +3595,7 @@ function isProjectObjectivesData(
     setData={setLivesData}
     clientSlug={clientSlug}
     presentationHref={`/apresentacao/${project.slug}`}
+    planningProjectId={project.id}
     isSaving={isSaving}
     isDisabled={!isModuleSelected}
     onSave={() => saveModule()}
